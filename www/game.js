@@ -2272,32 +2272,32 @@ function updateMinimap() {
 
 // Helper function to update resource dots (3 rows, each dot = 15%)
 function updateResourceDots(resourceName, value, maxValue, color) {
-  // Calculate number of filled dots (each dot = 15% of max)
+  // Calculate number of filled dots (each dot = 15% of max) - 7 dots total
   const filledDots = Math.min(7, Math.floor((value / maxValue) * (100 / 15)));
   const totalDots = 7;
   
-  // Distribute dots across 3 rows: row1=3 dots, row2=2 dots, row3=2 dots
-  const dotsPerRow = [3, 2, 2];
-  let dotIndex = 0;
+  // Display dots horizontally
+  const dotsContainer = document.getElementById(`isb-${resourceName}-dots`);
+  if (!dotsContainer) return;
   
-  for (let row = 1; row <= 3; row++) {
-    const container = document.getElementById(`isb-${resourceName}-row${row}`);
-    if (!container) continue;
-    
-    container.innerHTML = '';
-    const dotsInThisRow = dotsPerRow[row - 1];
-    
-    for (let i = 0; i < dotsInThisRow; i++) {
-      const dot = document.createElement('div');
-      const isFilled = dotIndex < filledDots;
-      dot.textContent = isFilled ? '●' : '○';
-      dot.style.color = color;
-      dot.style.fontSize = '10px';
-      dot.style.opacity = isFilled ? '1' : '0.3';
-      dot.style.transition = 'opacity 0.2s';
-      container.appendChild(dot);
-      dotIndex++;
-    }
+  dotsContainer.innerHTML = '';
+  
+  for (let i = 0; i < totalDots; i++) {
+    const dot = document.createElement('div');
+    const isFilled = i < filledDots;
+    dot.textContent = isFilled ? '●' : '○';
+    dot.style.color = color;
+    dot.style.fontSize = '9px';
+    dot.style.opacity = isFilled ? '1' : '0.3';
+    dot.style.transition = 'opacity 0.2s';
+    dotsContainer.appendChild(dot);
+  }
+  
+  // Update bar fill
+  const barFill = document.getElementById(`isb-${resourceName}-fill`);
+  if (barFill) {
+    const percentage = Math.max(0, Math.min(100, (value / maxValue) * 100));
+    barFill.style.width = percentage + '%';
   }
 }
 
