@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">HLF Escape Pod</string>
+    <string name="title_activity_main">HLF Escape Pod</string>
+    <string name="package_name">com.hlfe.escapepod</string>
+    <string name="custom_url_scheme">com.hlfe.escapepod</string>
+</resources>
