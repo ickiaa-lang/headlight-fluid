@@ -2270,27 +2270,53 @@ function updateMinimap() {
   }
 }
 
+// Helper function to update resource dots (3 rows, each dot = 15%)
+function updateResourceDots(resourceName, value, maxValue, color) {
+  // Calculate number of filled dots (each dot = 15% of max)
+  const filledDots = Math.min(7, Math.floor((value / maxValue) * (100 / 15)));
+  const totalDots = 7;
+  
+  // Distribute dots across 3 rows: row1=3 dots, row2=2 dots, row3=2 dots
+  const dotsPerRow = [3, 2, 2];
+  let dotIndex = 0;
+  
+  for (let row = 1; row <= 3; row++) {
+    const container = document.getElementById(`isb-${resourceName}-row${row}`);
+    if (!container) continue;
+    
+    container.innerHTML = '';
+    const dotsInThisRow = dotsPerRow[row - 1];
+    
+    for (let i = 0; i < dotsInThisRow; i++) {
+      const dot = document.createElement('div');
+      const isFilled = dotIndex < filledDots;
+      dot.textContent = isFilled ? '●' : '○';
+      dot.style.color = color;
+      dot.style.fontSize = '10px';
+      dot.style.opacity = isFilled ? '1' : '0.3';
+      dot.style.transition = 'opacity 0.2s';
+      container.appendChild(dot);
+      dotIndex++;
+    }
+  }
+}
+
 function updateHUD() {
   const menusOpen = inventoryOpen || stationPanelOpen;
 
   // Hide main HUD when any menu/inventory is open
-  const hudIds = ['o2', 'o2-val', 'h2o', 'h2o-val', 'food', 'food-val', 'fuel', 'fuel-val', 'laser-charge', 'laser-val'];
-  hudIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = menusOpen ? 'none' : '';
-  });
+  const ingameStats = document.getElementById('ingame-stats');
+  if (ingameStats) {
+    ingameStats.style.display = menusOpen ? 'none' : '';
+  }
 
   if (menusOpen) return;
 
-  // === Core resource bars only ===
-  document.getElementById('o2').value = oxygen;
-  document.getElementById('o2-val').textContent = Math.floor(oxygen);
-  document.getElementById('h2o').value = water;
-  document.getElementById('h2o-val').textContent = Math.floor(water);
-  document.getElementById('food').value = food;
-  document.getElementById('food-val').textContent = Math.floor(food);
-  document.getElementById('fuel').value = fuel;
-  document.getElementById('fuel-val').textContent = Math.floor(fuel);
+  // === Core resource dots (3 rows, each dot = 15%) ===
+  updateResourceDots('o2', oxygen, 100, '#0f8');
+  updateResourceDots('h2o', water, 100, '#48f');
+  updateResourceDots('food', food, 100, '#fa0');
+  updateResourceDots('fuel', fuel, 100, '#f44');
 
   // Laser charge / status
   const laserVal = document.getElementById('laser-val');
