@@ -1,0 +1,20 @@
+{
+  "name": "hlf-escape-pod",
+  "version": "0.3.0",
+  "description": "HLF Escape Pod — Three.js space survival game, wrapped as a native Android app with Capacitor.",
+  "private": true,
+  "scripts": {
+    "sync": "npx cap sync android",
+    "open:android": "npx cap open android",
+    "build:apk": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/app": "^6.0.1",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2",
+    "typescript": "^5.5.4"
+  }
+}
