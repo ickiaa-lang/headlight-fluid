@@ -1,8 +1,0 @@
-name: Unzip Repo
-on: [push, workflow_dispatch]
-jobs:
-  unzip:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: unzip -o 'Escape-pOd-main.zip' || true
