@@ -1,37 +1,8 @@
-name: Unzip Project Archive
-
-on:
-  workflow_dispatch:     # Only runs when you manually trigger it
-
+name: Unzip Repo
+on: [push, workflow_dispatch]
 jobs:
   unzip:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Unzip Escape-pOd-main.zip into repo root
-        run: |
-          if [ ! -f Escape-pOd-main.zip ]; then
-            echo "No Escape-pOd-main.zip found in repo root — nothing to do."
-            exit 0
-          fi
-          echo "Extracting Escape-pOd-main.zip..."
-          unzip -o Escape-pOd-main.zip -d _unzip_tmp
-          shopt -s dotglob
-          cp -r _unzip_tmp/Escape-pOd-main/* .
-          rm -rf _unzip_tmp Escape-pOd-main.zip
-          echo "Repo root now contains:"
-          ls -la
-
-      - name: Commit and push extracted files
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "Nothing to commit."
-          else
-            git commit -m "Unzip Escape-pOd-main.zip into repo root"
-            git push
-          fi
+      - uses: actions/checkout@v4
+      - run: unzip -o 'Escape-pOd-main.zip' || true
