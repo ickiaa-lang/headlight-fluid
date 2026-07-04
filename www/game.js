@@ -3153,7 +3153,7 @@ function animateFrame() {
     }
 
     // Camera follow calculation
-    const offset = new THREE.Vector3(0, 11, 16);
+    const offset = new THREE.Vector3(0, 11, -16);
     offset.applyQuaternion(player.quaternion);
     const desiredPos = player.position.clone().add(offset);
     camera.position.lerp(desiredPos, 0.12);
