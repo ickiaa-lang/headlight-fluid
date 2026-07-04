@@ -197,6 +197,15 @@ document.getElementById('btn-keys').addEventListener('click', () => {
 });
 document.getElementById('btn-keys-close').addEventListener('click', () => { document.getElementById('keys-panel').style.display = 'none'; });
 
+document.getElementById('btn-inventory-close').addEventListener('click', () => {
+  inventoryOpen = false;
+  document.getElementById('inventory').style.display = 'none';
+});
+
+document.getElementById('btn-station-close').addEventListener('click', () => {
+  closeStationPanel();
+});
+
 let hostPin = '';
 let playerNick = '';
 let mpPlayers = [];
@@ -712,7 +721,7 @@ function createEscapePod() {
 
   // Flashlight (will be toggled with F)
   const flashLight = new THREE.PointLight(0xaaffff, 0, 80);
-  flashLight.position.set(0, 0.35, -2.5);
+  flashLight.position.set(0, 0.35, 2.5);
   group.add(flashLight);
   group.userData.flashlight = flashLight;
 
@@ -721,19 +730,19 @@ function createEscapePod() {
   const barrelMat = new THREE.MeshPhongMaterial({ color: 0x334455, shininess: 60, specular: 0x88aacc });
   const barrel = new THREE.Mesh(barrelGeo, barrelMat);
   barrel.rotation.x = Math.PI / 2;
-  barrel.position.set(0, -0.45, -2.7);
+  barrel.position.set(0, -0.45, 2.7);
   group.add(barrel);
 
   const muzzleGeo = new THREE.TorusGeometry(0.10, 0.03, 6, 10);
   const muzzleMat = new THREE.MeshPhongMaterial({ color: 0xff4400, emissive: 0x441100, shininess: 80 });
   const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
   muzzle.rotation.x = Math.PI / 2;
-  muzzle.position.set(0, -0.45, -3.4);
+  muzzle.position.set(0, -0.45, 3.4);
   group.add(muzzle);
 
   const beamPoints = [
-    new THREE.Vector3(0, -0.35, -3.25),
-    new THREE.Vector3(0, -0.35, -3.25)
+    new THREE.Vector3(0, -0.35, 3.25),
+    new THREE.Vector3(0, -0.35, 3.25)
   ];
   const beamGeo = new THREE.BufferGeometry().setFromPoints(beamPoints);
   const beamMat = new THREE.LineBasicMaterial({ color: 0xff3300, linewidth: 2, transparent: true, opacity: 0 });
@@ -743,7 +752,7 @@ function createEscapePod() {
   group.userData.beamGeo = beamGeo;
 
   const laserLight = new THREE.PointLight(0xff3300, 0, 20);
-  laserLight.position.set(0, -0.35, -3.3);
+  laserLight.position.set(0, -0.35, 3.3);
   group.add(laserLight);
   group.userData.laserLight = laserLight;
 
@@ -785,6 +794,7 @@ function createEscapePod() {
 }
 
 const player = createEscapePod();
+player.rotation.y = Math.PI;  // Spin 180 degrees horizontally
 scene.add(player);
 player.position.set(0, 0, 0);
 
@@ -1227,8 +1237,8 @@ class SpaceMine extends Destructible {
       }
       // Laser hit check
       if (laserState === 'bursting') {
-        const muzzleWorld = new THREE.Vector3(0,-0.35,-3.25).applyMatrix4(player.matrixWorld);
-        const rayDir = new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion).normalize();
+        const muzzleWorld = new THREE.Vector3(0,-0.35,3.25).applyMatrix4(player.matrixWorld);
+        const rayDir = new THREE.Vector3(0,0,1).applyQuaternion(player.quaternion).normalize();
         const toMine = this.mesh.position.clone().sub(muzzleWorld);
         const along  = toMine.dot(rayDir);
         if (along > 0 && along < LASER_BEAM_LENGTH) {
@@ -1372,8 +1382,8 @@ class ResourceFarm extends Destructible {
 
     // Laser destruction
     if (laserState === 'bursting') {
-      const muzzleWorld = new THREE.Vector3(0,-0.35,-3.25).applyMatrix4(player.matrixWorld);
-      const rayDir = new THREE.Vector3(0,0,-1).applyQuaternion(player.quaternion).normalize();
+      const muzzleWorld = new THREE.Vector3(0,-0.35,3.25).applyMatrix4(player.matrixWorld);
+      const rayDir = new THREE.Vector3(0,0,1).applyQuaternion(player.quaternion).normalize();
       const toFarm = this.mesh.position.clone().sub(muzzleWorld);
       const along  = toFarm.dot(rayDir);
       if (along > 0 && along < LASER_BEAM_LENGTH) {
@@ -2081,24 +2091,24 @@ function updateGamepad() {
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
   const gp = pads[0];
   if (!gp) return;
-  // Left stick X = yaw (A/D), Y = pitch (I/K) - thrust only on button
+  // Left stick X = yaw (A/D), Y = pitch (I/K)
   const yaw = gp.axes[0] || 0;
   keys['a'] = yaw < -0.25;
   keys['d'] = yaw > 0.25;
   const pitch = gp.axes[1] || 0;
   keys['i'] = pitch < -0.25;
   keys['k'] = pitch > 0.25;
-  // Right stick active (Y axis for fine pitch control)
+  // Right stick Y = forward/backward thrust (W/S)
   const rightY = gp.axes[3] || 0;
   if (Math.abs(rightY) > 0.3) {
-    if (rightY < -0.3) keys['i'] = true;
-    if (rightY > 0.3) keys['k'] = true;
+    if (rightY < -0.3) keys['w'] = true;  // Pull back = forward thrust
+    if (rightY > 0.3) keys['s'] = true;   // Push forward = backward thrust
   }
-  // A button = thrust (W)
-  keys['w'] = !!(gp.buttons[0] && gp.buttons[0].pressed);
-  // Y button = warp (T)
-  keys['t'] = !!(gp.buttons[3] && gp.buttons[3].pressed);
-  // R trigger button = laser (CTRL) - not right stick
+  // A button = warp (T)
+  keys['t'] = !!(gp.buttons[0] && gp.buttons[0].pressed);
+  // Y button = scan (G)
+  keys['g'] = !!(gp.buttons[3] && gp.buttons[3].pressed);
+  // R trigger button = laser (CTRL)
   keys['control'] = !!(gp.buttons[7] && gp.buttons[7].pressed);
   // B button = inventory (P) or station dock (O) if in range
   if (nearStation) {
@@ -2405,8 +2415,8 @@ function fireLaserShot() {
   const beamLen    = LASER_BEAM_LENGTH;
 
   const pos = beamGeo.attributes.position;
-  pos.setXYZ(0, 0, -0.35, -3.25);
-  pos.setXYZ(1, 0, -0.35, -3.25 - beamLen);
+  pos.setXYZ(0, 0, -0.35, 3.25);
+  pos.setXYZ(1, 0, -0.35, 3.25 + beamLen);
   pos.needsUpdate = true;
 
   beam.material.opacity = 0.95;
@@ -2415,8 +2425,8 @@ function fireLaserShot() {
   laserLight.distance  = 32;
   laserLight.color.setRGB(1.0, 0.3, 0.0);
 
-  const muzzleWorld = new THREE.Vector3(0, -0.35, -3.25).applyMatrix4(player.matrixWorld);
-  const rayDir      = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion).normalize();
+  const muzzleWorld = new THREE.Vector3(0, -0.35, 3.25).applyMatrix4(player.matrixWorld);
+  const rayDir      = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion).normalize();
 
   if (invaders.length) {
     invaders.forEach(inv => {

@@ -86,8 +86,8 @@
   const root = document.createElement('div');
   root.id = 'touch-controls';
   root.innerHTML = `
-    <div id="tc-joy-move" class="tc-joy-base"><div class="tc-joy-thumb"></div></div>
-    <div id="tc-joy-pitch" class="tc-joy-base"><div class="tc-joy-thumb"></div></div>
+    <div id="tc-joy-move" class="tc-joy-base" title="Orientation: Yaw (left/right) & Pitch (up/down)"><div class="tc-joy-thumb"></div></div>
+    <div id="tc-joy-pitch" class="tc-joy-base" title="Thrust: Pull back = forward, Push = backward"><div class="tc-joy-thumb"></div></div>
     <div id="tc-fire" class="tc-btn">FIRE</div>
     <div id="tc-boost" class="tc-btn">BOOST</div>
     <div id="tc-actions">
@@ -168,18 +168,20 @@
 
   makeJoystick('tc-joy-move', {
     onVector: (nx, ny) => {
+      // Left stick: X = yaw (A/D), Y = pitch (I/K)
       keys['a'] = nx < -DEADZONE;
       keys['d'] = nx > DEADZONE;
-      keys['w'] = ny < -DEADZONE;
-      keys['s'] = ny > DEADZONE;
+      keys['i'] = ny < -DEADZONE;
+      keys['k'] = ny > DEADZONE;
     }
   });
 
   makeJoystick('tc-joy-pitch', {
     verticalOnly: true,
     onVector: (nx, ny) => {
-      keys['i'] = ny < -DEADZONE;
-      keys['k'] = ny > DEADZONE;
+      // Right stick: pull back = forward thrust (W), push forward = backward thrust (S)
+      keys['w'] = ny < -DEADZONE;
+      keys['s'] = ny > DEADZONE;
     }
   });
 
