@@ -253,46 +253,30 @@
   <div id="scan-results" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,10,30,0.92); border:2px solid #0ff; padding:20px 30px; border-radius:6px; color:#0ff; font-family:monospace; font-size:14px; text-align:left; box-shadow:0 0 40px rgba(0,255,255,0.4); min-width:280px;"></div>
 </div>
 
-<!-- IN-GAME RESOURCE BARS (bottom, in-game only) - DOT DISPLAY (3 ROWS, 15% PER DOT) -->
-<div id="ingame-stats" style="display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,8,24,0.82); border:1px solid #0ff; border-radius:4px; padding:12px 20px; font-family:monospace; font-size:10px; color:#0ff; z-index:90; gap:20px; align-items:flex-end; line-height:1;" data-flex-display="flex">
-  <!-- O₂ Dots (3 rows) -->
-  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-    <div style="text-align:center; color:#0f8; font-size:9px; letter-spacing:1px; height:12px;">O₂</div>
-    <div style="display:flex; flex-direction:column; gap:2px;">
-      <div id="isb-o2-row1" style="display:flex; gap:2px; justify-content:center;"></div>
-      <div id="isb-o2-row2" style="display:flex; gap:2px; justify-content:center;"></div>
-      <div id="isb-o2-row3" style="display:flex; gap:2px; justify-content:center;"></div>
-    </div>
+<!-- IN-GAME RESOURCE BARS (bottom, in-game only) - DOT DISPLAY (5 VERTICAL DOTS ABOVE HEADING, 20% PER DOT) -->
+<div id="ingame-stats" style="display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,8,24,0.82); border-radius:4px; padding:12px 20px; font-family:monospace; font-size:10px; color:#0ff; z-index:90; gap:20px; align-items:flex-end; line-height:1;" data-flex-display="flex">
+  <!-- O₂ Dots (5 vertical dots above heading) -->
+  <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+    <div id="isb-o2-dots" style="display:flex; flex-direction:column; gap:2px; align-items:center;"></div>
+    <div style="text-align:center; color:#0f8; font-size:9px; letter-spacing:1px;">O₂</div>
   </div>
-  
-  <!-- H₂O Dots (3 rows) -->
-  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-    <div style="text-align:center; color:#48f; font-size:9px; letter-spacing:1px; height:12px;">H₂O</div>
-    <div style="display:flex; flex-direction:column; gap:2px;">
-      <div id="isb-h2o-row1" style="display:flex; gap:2px; justify-content:center;"></div>
-      <div id="isb-h2o-row2" style="display:flex; gap:2px; justify-content:center;"></div>
-      <div id="isb-h2o-row3" style="display:flex; gap:2px; justify-content:center;"></div>
-    </div>
+
+  <!-- H₂O Dots (5 vertical dots above heading) -->
+  <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+    <div id="isb-h2o-dots" style="display:flex; flex-direction:column; gap:2px; align-items:center;"></div>
+    <div style="text-align:center; color:#48f; font-size:9px; letter-spacing:1px;">H₂O</div>
   </div>
-  
-  <!-- FOOD Dots (3 rows) -->
-  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-    <div style="text-align:center; color:#fa0; font-size:9px; letter-spacing:1px; height:12px;">FOOD</div>
-    <div style="display:flex; flex-direction:column; gap:2px;">
-      <div id="isb-food-row1" style="display:flex; gap:2px; justify-content:center;"></div>
-      <div id="isb-food-row2" style="display:flex; gap:2px; justify-content:center;"></div>
-      <div id="isb-food-row3" style="display:flex; gap:2px; justify-content:center;"></div>
-    </div>
+
+  <!-- FOOD Dots (5 vertical dots above heading) -->
+  <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+    <div id="isb-food-dots" style="display:flex; flex-direction:column; gap:2px; align-items:center;"></div>
+    <div style="text-align:center; color:#fa0; font-size:9px; letter-spacing:1px;">FOOD</div>
   </div>
-  
-  <!-- FUEL Dots (3 rows) -->
-  <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
-    <div style="text-align:center; color:#f44; font-size:9px; letter-spacing:1px; height:12px;">FUEL</div>
-    <div style="display:flex; flex-direction:column; gap:2px;">
-      <div id="isb-fuel-row1" style="display:flex; gap:2px; justify-content:center;"></div>
-      <div id="isb-fuel-row2" style="display:flex; gap:2px; justify-content:center;"></div>
-      <div id="isb-fuel-row3" style="display:flex; gap:2px; justify-content:center;"></div>
-    </div>
+
+  <!-- FUEL Dots (5 vertical dots above heading) -->
+  <div style="display:flex; flex-direction:column; align-items:center; gap:4px;">
+    <div id="isb-fuel-dots" style="display:flex; flex-direction:column; gap:2px; align-items:center;"></div>
+    <div style="text-align:center; color:#f44; font-size:9px; letter-spacing:1px;">FUEL</div>
   </div>
 </div>
 

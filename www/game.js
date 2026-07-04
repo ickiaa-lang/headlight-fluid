@@ -535,103 +535,101 @@ scene.add(sun);
 function createEscapePod() {
   const group = new THREE.Group();
 
-  // === TIE FIGHTER style with straight left wing (asymmetric) ===
-  const matGray = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 30, specular: 0x222222 });
-  const matDark = new THREE.MeshPhongMaterial({ color: 0x333333, shininess: 20 });
+  // === Dragonfly-style hull: round thorax body, big swept insect wings ===
+  const matGray = new THREE.MeshPhongMaterial({ color: 0x8c8578, shininess: 30, specular: 0x333322 });
+  const matDark = new THREE.MeshPhongMaterial({ color: 0x3a352c, shininess: 20 });
   const matBlue = new THREE.MeshPhongMaterial({ color: 0x4488ff, emissive: 0x112244, shininess: 90 });
-  const matPylon = new THREE.MeshPhongMaterial({ color: 0x555555, shininess: 10 });
+  const matPylon = new THREE.MeshPhongMaterial({ color: 0x55504a, shininess: 10 });
 
-  // Central truncated-icosahedron cockpit (faceted spherical hex/pent)
-  const cockpit = new THREE.Mesh(new THREE.IcosahedronGeometry(1.0, 2), matGray);
+  function addEdges(mesh, opacity) {
+    const edges = new THREE.LineSegments(
+      new THREE.EdgesGeometry(mesh.geometry),
+      new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: opacity !== undefined ? opacity : 0.6 })
+    );
+    mesh.add(edges);
+  }
+
+  // Central bulbous thorax (round faceted body)
+  const cockpit = new THREE.Mesh(new THREE.IcosahedronGeometry(1.15, 2), matGray);
   group.add(cockpit);
 
   // Front viewport window
-  const viewport = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 12), matBlue);
-  viewport.position.set(0, 0.1, -1.15);
+  const viewport = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), matBlue);
+  viewport.position.set(0, 0.15, -1.2);
   group.add(viewport);
 
-  // Simple pointed nose (makes it look more like >o-( )
-  const nose = new THREE.Mesh(
-    new THREE.ConeGeometry(0.6, 1.4, 8),
-    matGray
-  );
-  nose.rotation.x = Math.PI / 2;
-  nose.position.set(0, 0, -2.3);
+  // Rounded nose cap (soft, insect-head shape rather than a sharp cone)
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.6, 10, 10), matGray);
+  nose.scale.set(0.85, 0.75, 1.3);
+  nose.position.set(0, 0, -1.55);
   group.add(nose);
 
-  // Right wing - TIE hexagonal panel (thin capped hex prism, vertical)
-  const rightWing = new THREE.Mesh(
-    new THREE.CylinderGeometry(2.5, 2.5, 0.12, 6, 1, false),
-    matDark
-  );
-  rightWing.rotation.z = Math.PI / 2;
-  rightWing.position.set(2.5, 0, 0);
+  // === Big swept, tapering insect-style wings (mirrored left/right) ===
+  function wingShape() {
+    const s = new THREE.Shape();
+    s.moveTo(0.15, 0.2);
+    s.lineTo(1.4, -0.1);
+    s.lineTo(3.5, -1.2);
+    s.lineTo(3.15, -1.85);
+    s.lineTo(1.6, -1.9);
+    s.lineTo(0.15, -1.0);
+    s.closePath();
+    return s;
+  }
+  function makeWing(mirror) {
+    const geo = new THREE.ExtrudeGeometry(wingShape(), { depth: 0.08, bevelEnabled: false });
+    const wing = new THREE.Mesh(geo, matDark);
+    wing.rotation.x = -Math.PI / 2;
+    if (mirror) wing.scale.x = -1;
+    addEdges(wing, 0.65);
+    return wing;
+  }
+
+  const rightWing = makeWing(false);
+  rightWing.position.set(0.9, 0.15, -0.15);
+  rightWing.rotation.z = -0.16; // slight upward dihedral toward the tip
   group.add(rightWing);
-  const rwEdges = new THREE.LineSegments(
-    new THREE.EdgesGeometry(rightWing.geometry),
-    new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.65 })
-  );
-  rightWing.add(rwEdges);
 
-  // Left wing — twin engine pods as pictured (two rounded lobes on left side)
-  const leftWingGroup = new THREE.Group();
-  leftWingGroup.position.set(-2.6, 0, 0);
-
-  // Upper left engine pod
-  const podUpper = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.55, 0.65, 1.4, 8),
-    matDark
-  );
-  podUpper.rotation.z = Math.PI / 2;
-  podUpper.position.set(-1.4, 0.7, 0.3);
-  leftWingGroup.add(podUpper);
-
-  // Lower left engine pod
-  const podLower = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.55, 0.65, 1.4, 8),
-    matDark
-  );
-  podLower.rotation.z = Math.PI / 2;
-  podLower.position.set(-1.4, -0.7, 0.3);
-  leftWingGroup.add(podLower);
-
-  // Connecting spar between pods and body
-  const connector = new THREE.Mesh(
-    new THREE.BoxGeometry(1.8, 0.18, 0.9),
-    matDark
-  );
-  connector.position.set(-0.6, 0, 0.2);
-  leftWingGroup.add(connector);
-
-  // Edge lines
-  [podUpper, podLower, connector].forEach(mesh => {
-    const edges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(mesh.geometry),
-      new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.6 })
-    );
-    mesh.add(edges);
-  });
-
-  // Edge highlights on all wing parts
-  leftWingGroup.children.forEach(mesh => {
-    if (mesh.geometry) {
-      const edges = new THREE.LineSegments(
-        new THREE.EdgesGeometry(mesh.geometry),
-        new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.65 })
-      );
-      mesh.add(edges);
-    }
-  });
-
+  const leftWingGroup = makeWing(true);
+  leftWingGroup.position.set(-0.9, 0.15, -0.15);
+  leftWingGroup.rotation.z = 0.16;
   group.add(leftWingGroup);
 
-  // Connecting pylons (better reach to wings)
-  const rightPylon = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.22, 0.22), matPylon);
-  rightPylon.position.set(1.55, 0, 0);
-  group.add(rightPylon);
-  const leftPylon = rightPylon.clone();
-  leftPylon.position.x = -1.55;
-  group.add(leftPylon);
+  // Short struts grounding each wing root to the thorax
+  const rootStrutGeo = new THREE.CylinderGeometry(0.14, 0.18, 0.7, 8);
+  const rightStrut = new THREE.Mesh(rootStrutGeo, matPylon);
+  rightStrut.rotation.z = Math.PI / 2;
+  rightStrut.position.set(0.55, 0.1, -0.15);
+  group.add(rightStrut);
+  const leftStrut = rightStrut.clone();
+  leftStrut.position.x = -0.55;
+  group.add(leftStrut);
+
+  // === Small forward stabilizer flaps (solar-panel-like fins near the nose) ===
+  const finGeo = new THREE.BoxGeometry(1.1, 0.06, 0.7);
+  const finStrutGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.55, 6);
+
+  const topFinStrut = new THREE.Mesh(finStrutGeo, matDark);
+  topFinStrut.rotation.z = 0.9;
+  topFinStrut.position.set(-0.5, 0.55, -0.85);
+  group.add(topFinStrut);
+  const topFin = new THREE.Mesh(finGeo, matPylon);
+  topFin.position.set(-1.05, 0.95, -0.85);
+  topFin.rotation.z = 0.55;
+  topFin.rotation.x = 0.1;
+  addEdges(topFin, 0.55);
+  group.add(topFin);
+
+  const bottomFinStrut = new THREE.Mesh(finStrutGeo, matDark);
+  bottomFinStrut.rotation.z = 0.9;
+  bottomFinStrut.position.set(-0.5, -0.55, -0.55);
+  group.add(bottomFinStrut);
+  const bottomFin = new THREE.Mesh(finGeo, matPylon);
+  bottomFin.position.set(-1.05, -0.95, -0.55);
+  bottomFin.rotation.z = -0.55;
+  bottomFin.rotation.x = -0.1;
+  addEdges(bottomFin, 0.55);
+  group.add(bottomFin);
 
   // Thrusters
   const thrusterGeo = new THREE.CylinderGeometry(0.28, 0.38, 0.9, 8);
@@ -641,11 +639,28 @@ function createEscapePod() {
     shininess: 10
   });
 
-  // Left thruster mounted between the twin engine pods
+  // Small running-light thruster tucked at the front-left of the thorax
   const leftT = new THREE.Mesh(thrusterGeo, thrusterMat);
   leftT.rotation.x = Math.PI / 2;
-  leftT.position.set(-2.1, 0, 1.5);
-  leftWingGroup.add(leftT);
+  leftT.scale.set(0.55, 0.55, 0.55);
+  leftT.position.set(-0.85, 0, -0.4);
+  group.add(leftT);
+
+  // Large glowing main engine housing, slung underneath the rear of the hull
+  const engineHousing = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 0.5, 12), matPylon);
+  engineHousing.rotation.x = Math.PI / 2;
+  engineHousing.position.set(0, -0.75, 1.1);
+  group.add(engineHousing);
+  addEdges(engineHousing, 0.4);
+
+  const engineGlowMat = new THREE.MeshBasicMaterial({ color: 0xfff2cc });
+  const engineGlow = new THREE.Mesh(new THREE.SphereGeometry(0.5, 14, 14), engineGlowMat);
+  engineGlow.position.set(0, -0.75, 1.45);
+  group.add(engineGlow);
+
+  const engineLight = new THREE.PointLight(0xffddaa, 1.4, 12);
+  engineLight.position.copy(engineGlow.position);
+  group.add(engineLight);
 
   // === Slight glowing thruster particle effect ===
   function createThrusterGlow() {
@@ -685,7 +700,13 @@ function createEscapePod() {
   leftT.add(leftGlow);
   leftGlow.position.z = 0.75;
 
-  group.userData.thrusterGlow = [leftGlow];
+  // Bigger particle bloom around the main rear engine
+  const mainGlow = createThrusterGlow();
+  mainGlow.scale.set(2.2, 2.2, 2.2);
+  mainGlow.position.copy(engineGlow.position);
+  group.add(mainGlow);
+
+  group.userData.thrusterGlow = [leftGlow, mainGlow];
   group.userData.velocity = new THREE.Vector3();
   group.userData.flashlightOn = false;
 
@@ -2270,19 +2291,19 @@ function updateMinimap() {
   }
 }
 
-// Helper function to update resource dots (3 rows, each dot = 15%)
+// Helper function to update resource dots (5 vertical dots, each dot = 20%)
 function updateResourceDots(resourceName, value, maxValue, color) {
-  // Calculate number of filled dots (each dot = 15% of max) - 7 dots total
-  const filledDots = Math.min(7, Math.floor((value / maxValue) * (100 / 15)));
-  const totalDots = 7;
-  
-  // Display dots horizontally
+  // Calculate number of filled dots (each dot = 20% of max) - 5 dots total
+  const totalDots = 5;
+  const filledDots = Math.min(totalDots, Math.floor((value / maxValue) * totalDots));
+
+  // Display dots vertically (stacked in a column), highest dot on top
   const dotsContainer = document.getElementById(`isb-${resourceName}-dots`);
   if (!dotsContainer) return;
-  
+
   dotsContainer.innerHTML = '';
-  
-  for (let i = 0; i < totalDots; i++) {
+
+  for (let i = totalDots - 1; i >= 0; i--) {
     const dot = document.createElement('div');
     const isFilled = i < filledDots;
     dot.textContent = isFilled ? '●' : '○';
@@ -2292,7 +2313,7 @@ function updateResourceDots(resourceName, value, maxValue, color) {
     dot.style.transition = 'opacity 0.2s';
     dotsContainer.appendChild(dot);
   }
-  
+
   // Update bar fill
   const barFill = document.getElementById(`isb-${resourceName}-fill`);
   if (barFill) {
@@ -2312,7 +2333,7 @@ function updateHUD() {
 
   if (menusOpen) return;
 
-  // === Core resource dots (3 rows, each dot = 15%) ===
+  // === Core resource dots (5 vertical dots above heading, each dot = 20%) ===
   updateResourceDots('o2', oxygen, 100, '#0f8');
   updateResourceDots('h2o', water, 100, '#48f');
   updateResourceDots('food', food, 100, '#fa0');
