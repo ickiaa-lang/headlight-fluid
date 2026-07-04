@@ -2313,13 +2313,6 @@ function updateResourceDots(resourceName, value, maxValue, color) {
     dot.style.transition = 'opacity 0.2s';
     dotsContainer.appendChild(dot);
   }
-
-  // Update bar fill
-  const barFill = document.getElementById(`isb-${resourceName}-fill`);
-  if (barFill) {
-    const percentage = Math.max(0, Math.min(100, (value / maxValue) * 100));
-    barFill.style.width = percentage + '%';
-  }
 }
 
 function updateHUD() {
@@ -2328,7 +2321,7 @@ function updateHUD() {
   // Hide main HUD when any menu/inventory is open
   const ingameStats = document.getElementById('ingame-stats');
   if (ingameStats) {
-    ingameStats.style.display = menusOpen ? 'none' : '';
+    ingameStats.style.display = menusOpen ? 'none' : 'flex';
   }
 
   if (menusOpen) return;
@@ -3621,11 +3614,11 @@ function generateNewRegionContent() {
     const typeNames = ['DEBRIS FIELD','JUNK YARD','SATELLITE GRAVEYARD','WRECK FIELD','COMMS RELAY'];
     rc.textContent = `SECTOR ${regionX},${regionZ}  •  ${typeNames[regionType]}`;
     rc.style.display = 'block';
-    // Position below ingame-stats panel
+    // Position above ingame-stats bar (which now spans the bottom of the screen)
     const stats = document.getElementById('ingame-stats');
     if (stats && stats.style.display !== 'none') {
       const sr = stats.getBoundingClientRect();
-      rc.style.top  = (sr.bottom + 6) + 'px';
+      rc.style.top  = (sr.top - rc.offsetHeight - 6) + 'px';
       rc.style.right = '20px';
       rc.style.left  = 'auto';
     } else {
