@@ -1,4 +1,4 @@
-# HLF Escape Pod — Android app (Capacitor)
+# Headlight-Fluid — Android app (Capacitor)
 
 This turns the existing Three.js web game into a real Android app using
 [Capacitor](https://capacitorjs.com/), which wraps the web build in a native
@@ -60,8 +60,7 @@ Same output path as above.
 
 ## If you change the game
 
-Edit files in `www/` (or edit in the original `HLF-ESCAPE-POD-V2.5/` folder
-and copy over), then re-sync before rebuilding:
+Edit files in `www/` (or edit in the original Headlight-Fluid source and copy over), then re-sync before rebuilding:
 ```bash
 npx cap sync android
 ```

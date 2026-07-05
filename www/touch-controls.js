@@ -179,9 +179,9 @@
   makeJoystick('tc-joy-pitch', {
     verticalOnly: true,
     onVector: (nx, ny) => {
-      // Right stick: pull back = forward thrust (W), push forward = backward thrust (S)
-      keys['w'] = ny < -DEADZONE;
-      keys['s'] = ny > DEADZONE;
+      // Right stick: push forward = forward thrust (away from camera), pull back = backward thrust
+      keys['s'] = ny < -DEADZONE;
+      keys['w'] = ny > DEADZONE;
     }
   });
 

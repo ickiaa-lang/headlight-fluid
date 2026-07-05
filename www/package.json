@@ -1,7 +1,7 @@
 {
-  "name": "hlf-escape-pod",
+  "name": "headlight-fluid",
   "version": "0.3.0",
-  "description": "HLF Escape Pod — Three.js space survival game, wrapped as a native Android app with Capacitor.",
+  "description": "Headlight-Fluid — Three.js space survival game by holdenkeyboard@gmail.com, wrapped as a native Android app with Capacitor.",
   "private": true,
   "scripts": {
     "sync": "npx cap sync android",

@@ -154,7 +154,7 @@ document.getElementById('btn-about').addEventListener('click', () => {
   const panel = document.getElementById('about-panel');
   const content = document.getElementById('about-content') || panel;
   content.innerHTML = `
-    <h2 style="color:#0ff; margin:0 0 15px 0;">Headlight-Fluid Escape Pod</h2>
+    <h2 style="color:#0ff; margin:0 0 15px 0;">Headlight-Fluid</h2>
     <p style="color:#aaa; line-height:1.5;">A small, rugged escape craft built for deep-space survival. 
     Features twin left engine pods, advanced resource management, and experimental navigation assist.</p>
     <div style="text-align:center; margin:15px 0;">
@@ -445,7 +445,16 @@ function formatPlaytime(secs) {
 
 function updateMenuPlaytime() {
   const el = document.getElementById('menu-playtime');
-  if (el) el.textContent = playTimeSeconds > 0 ? 'SESSION  ' + formatPlaytime(playTimeSeconds) : '';
+  if (el) {
+    if (playTimeSeconds > 0) {
+      el.textContent = 'SESSION  ' + formatPlaytime(playTimeSeconds);
+      // Add strikethrough if any resource is empty
+      el.style.textDecoration = window.allResourcesAvailable ? 'none' : 'line-through';
+      el.style.opacity = window.allResourcesAvailable ? '1' : '0.5';
+    } else {
+      el.textContent = '';
+    }
+  }
 }
 
 // === 3D ENGINE (Three.js scene, ship, physics, render loop) ===
@@ -540,7 +549,7 @@ const sun = new THREE.DirectionalLight(0xffeecc, 0.6);
 sun.position.set(50, 80, -30);
 scene.add(sun);
 
-// === PLAYER SHIP (Toothpick — Headlight-Fluid Escape Pod) ===
+// === PLAYER SHIP (Toothpick — Headlight-Fluid) ===
 function createEscapePod() {
   const group = new THREE.Group();
 
@@ -1805,6 +1814,9 @@ function createWreck(seed) {
 let oxygen = 85, water = 70, food = 60, fuel = 55;
 let keys = {};
 
+// Resource availability flag for HUD/standby display
+window.allResourcesAvailable = oxygen > 0 && water > 0 && food > 0 && fuel > 0;
+
 let lastThrustTime = 0;
 const doubleTapWindow = 300; 
 let isBoosting = false;
@@ -2101,8 +2113,8 @@ function updateGamepad() {
   // Right stick Y = forward/backward thrust (W/S)
   const rightY = gp.axes[3] || 0;
   if (Math.abs(rightY) > 0.3) {
-    if (rightY < -0.3) keys['w'] = true;  // Pull back = forward thrust
-    if (rightY > 0.3) keys['s'] = true;   // Push forward = backward thrust
+    if (rightY < -0.3) keys['s'] = true;  // Pull back = backward thrust (toward camera)
+    if (rightY > 0.3) keys['w'] = true;   // Push forward = forward thrust (away from camera)
   }
   // A button = warp (T)
   keys['t'] = !!(gp.buttons[0] && gp.buttons[0].pressed);
@@ -2325,6 +2337,23 @@ function updateResourceDots(resourceName, value, maxValue, color) {
   }
 }
 
+function updateStandbyImages() {
+  const idle = document.getElementById('standby-idle');
+  const active = document.getElementById('standby-active');
+  if (!idle || !active) return;
+  
+  const menusOpen = inventoryOpen || stationPanelOpen;
+  
+  // Only show standby images during gameplay (not in menus or main menu)
+  // Show standby-2 (active) when ALL resources are available
+  // Show standby-1 (idle) when ANY resource is empty
+  const showActive = gameActive && window.allResourcesAvailable && !menusOpen;
+  const showIdle = gameActive && !window.allResourcesAvailable && !menusOpen;
+  
+  idle.style.display = showIdle ? 'block' : 'none';
+  active.style.display = showActive ? 'block' : 'none';
+}
+
 function updateHUD() {
   const menusOpen = inventoryOpen || stationPanelOpen;
 
@@ -2361,6 +2390,9 @@ function updateHUD() {
       laserVal.style.color = '#ff4400';
     }
   }
+  
+  // Update standby images
+  updateStandbyImages();
 }
 
 function updateLaser(delta) {
@@ -2937,9 +2969,13 @@ function animateFrame() {
   const delta = Math.min(clock.getDelta(), 0.1);
 
   if (gameActive) {
-    // Timer only counts while all active resources are non-zero
-    const allResourcesActive = oxygen > 0 && water > 0 && food > 0 && fuel > 0;
-    if (allResourcesActive) playTimeSeconds += delta;
+    // Timer only counts when ALL resources have any amount (not empty)
+    const allResourcesAvailable = oxygen > 0 && water > 0 && food > 0 && fuel > 0;
+    if (allResourcesAvailable) playTimeSeconds += delta;
+    
+    // Store for HUD/standby display
+    window.allResourcesAvailable = allResourcesAvailable;
+    
     const rotSpeed = 0.035;
     const pitchSpeed = 0.028;
     const vel = player.userData.velocity;
@@ -2953,13 +2989,13 @@ function animateFrame() {
     const thrustPower = 0.175; 
     if (keys['w'] || keys['arrowup']) {
       const boostMultiplier = isBoosting ? 2.0 : 1.0;
-      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
+      const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion);
       vel.add(dir.multiplyScalar(thrustPower * boostMultiplier));
 
       fuel = Math.max(0, fuel - (isBoosting ? 0.18 : 0.08));
     }
     if (keys['s'] || keys['arrowdown']) {
-      const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion);
+      const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(player.quaternion);
       vel.add(dir.multiplyScalar(thrustPower * 0.6));
     }
 
@@ -3356,6 +3392,7 @@ function animateFrame() {
 
   updateCenterTriangle();
   updateHUD();
+  updateMenuPlaytime();
   if (minimapEnabled && minimap && ctx) updateMinimap();
   drawCRT(delta);
 
@@ -4108,7 +4145,7 @@ const cliCommands = {
     }
     gameActive = true; cliPrint('Game resumed.', '#0f8');
   },
-  version: () => { cliPrint('Headlight-Fluid: Escape Pod v3.1 — Three.js build. CLI active.', '#aff'); },
+  version: () => { cliPrint('Headlight-Fluid v3.1 — Three.js build. CLI active. by holdenkeyboard@gmail.com', '#aff'); },
   quit: () => {
     if (hasPyAPI()) { window.pywebview.api.quit(); }
     else { cliPrint('quit only works in desktop build.', '#f84'); }
@@ -4217,88 +4254,8 @@ updateHUD();
 generateNewRegionContent(); 
 animate();
 
-// === MENU BACKGROUND — starfield + drifting escape pod ===
-(function() {
-  const canvas = document.getElementById('menu-bg');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
-  let W, H;
-  const NUM_STARS = 700;
-  const stars = [];
-
-  function resize() {
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  // Seed stars across full canvas
-  function seedStars() {
-    stars.length = 0;
-    for (let i = 0; i < NUM_STARS; i++) {
-      stars.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: Math.random() * 1.8 + 0.15,
-        alpha: Math.random() * 0.7 + 0.25,
-        twinkleSpeed: Math.random() * 0.01 + 0.002,
-        twinklePhase: Math.random() * Math.PI * 2
-      });
-    }
-  }
-  seedStars();
-  window.addEventListener('resize', seedStars);
-
-  let t = 0;
-
-  function loop() {
-    const menuVisible = document.getElementById('main-menu').style.display !== 'none';
-    // This canvas sits at a high z-index so it layers above the game's own
-    // canvas. Previously it just stopped redrawing when the menu closed,
-    // but the last frame it painted (fully opaque) stayed on screen forever,
-    // permanently covering the actual gameplay. Explicitly hide/show it in
-    // step with the menu instead.
-    canvas.style.display = menuVisible ? 'block' : 'none';
-    if (!menuVisible) { requestAnimationFrame(loop); return; }
-
-    t += 0.016;
-
-    ctx.fillStyle = 'rgba(0,4,16,1)';
-    ctx.fillRect(0, 0, W, H);
-
-    // Draw stars
-    stars.forEach(s => {
-      s.twinklePhase += s.twinkleSpeed;
-      const a = s.alpha * (0.7 + 0.3 * Math.sin(s.twinklePhase));
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(200,220,255,${a})`;
-      ctx.fill();
-    });
-
-    // Subtle vignette
-    const vig = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.85);
-    vig.addColorStop(0, 'rgba(0,0,0,0)');
-    vig.addColorStop(1, 'rgba(0,0,10,0.55)');
-    ctx.fillStyle = vig;
-    ctx.fillRect(0, 0, W, H);
-
-    // Credits — bottom left
-    ctx.save();
-    ctx.font = '11px monospace';
-    ctx.fillStyle = 'rgba(0,200,255,0.38)';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('*Holden-keyboard* – headlight-fluid,v1', 14, H - 12);
-    ctx.restore();
-
-    requestAnimationFrame(loop);
-  }
-
-  loop();
-})();
+// === MENU BACKGROUND DISABLED ===
+// (previously showed animated starfield with drifting pod)
 
 // Make menus & main menu scrollable (mobile/Android)
 ['main-menu','about-panel','keys-panel','saveload-panel','inventory','station-panel'].forEach(id => {
@@ -4310,4 +4267,4 @@ animate();
   }
 });
 
-console.log('%c[Headlight-Fluid: Escape Pod] v1 loaded', 'color:#ff4400');
+console.log('%c[Headlight-Fluid] v3.1 loaded — by holdenkeyboard@gmail.com', 'color:#ff4400');

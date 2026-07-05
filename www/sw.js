@@ -1,4 +1,4 @@
-// Minimal offline-first cache for HLF Escape Pod.
+// Minimal offline-first cache for Headlight-Fluid.
 // Bump CACHE_NAME whenever shipped assets change so clients pick up updates.
 const CACHE_NAME = 'hlf-escape-pod-v0.3r';
 const ASSETS = [
