@@ -10,16 +10,9 @@
   const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   if (!isTouchDevice) return;
 
-  // Hide the desktop keyboard-hint text; touch controls replace it.
-  const hideWhenReady = () => {
-    const instr = document.getElementById('instructions');
-    if (instr) instr.style.display = 'none';
-  };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hideWhenReady);
-  } else {
-    hideWhenReady();
-  }
+  // Joystick + fire button visibility, toggled from the main menu
+  // ("JOYSTICK: ON/OFF" button in game.js). Defaults to visible.
+  if (typeof window.joystickControlsVisible === 'undefined') window.joystickControlsVisible = true;
 
   // ---------- styles ----------
   const style = document.createElement('style');
@@ -65,11 +58,6 @@
       background: rgba(40,0,0,0.5); text-shadow: 0 0 5px #f44;
     }
     #tc-fire.tc-pressed { background: rgba(255,60,60,0.4); }
-    #tc-boost {
-      width: 56px; height: 56px; border-radius: 50%;
-      right: 210px; bottom: max(225px, calc(env(safe-area-inset-bottom) + 225px));
-      font-size: 10px;
-    }
     #tc-actions {
       position: absolute; top: max(8px, env(safe-area-inset-top));
       left: 50%; transform: translateX(-50%);
@@ -79,6 +67,7 @@
       position: static; pointer-events: auto;
       width: 48px; height: 30px; border-radius: 4px; font-size: 10px;
     }
+    #tc-joysticks.tc-joysticks-hidden { display: none; }
   `;
   document.head.appendChild(style);
 
@@ -86,10 +75,11 @@
   const root = document.createElement('div');
   root.id = 'touch-controls';
   root.innerHTML = `
-    <div id="tc-joy-move" class="tc-joy-base" title="Orientation: Yaw (left/right) & Pitch (up/down)"><div class="tc-joy-thumb"></div></div>
-    <div id="tc-joy-pitch" class="tc-joy-base" title="Thrust: Pull back = forward, Push = backward"><div class="tc-joy-thumb"></div></div>
-    <div id="tc-fire" class="tc-btn">FIRE</div>
-    <div id="tc-boost" class="tc-btn">BOOST</div>
+    <div id="tc-joysticks">
+      <div id="tc-joy-move" class="tc-joy-base" title="Orientation: Yaw (left/right) & Pitch (up/down)"><div class="tc-joy-thumb"></div></div>
+      <div id="tc-joy-pitch" class="tc-joy-base" title="Thrust: Pull back = forward, Push = backward"><div class="tc-joy-thumb"></div></div>
+      <div id="tc-fire" class="tc-btn">FIRE</div>
+    </div>
     <div id="tc-actions">
       <div class="tc-btn" data-key=" ">STOP</div>
       <div class="tc-btn" data-key="t">WARP</div>
@@ -196,17 +186,6 @@
   fireBtn.addEventListener('pointerup', releaseFire);
   fireBtn.addEventListener('pointercancel', releaseFire);
 
-  // ---------- boost (held) ----------
-  const boostBtn = document.getElementById('tc-boost');
-  boostBtn.addEventListener('pointerdown', e => {
-    boostBtn.setPointerCapture(e.pointerId);
-    boostBtn.classList.add('tc-pressed');
-    isBoosting = true;
-  });
-  const releaseBoost = () => { boostBtn.classList.remove('tc-pressed'); isBoosting = false; };
-  boostBtn.addEventListener('pointerup', releaseBoost);
-  boostBtn.addEventListener('pointercancel', releaseBoost);
-
   // ---------- discrete action buttons ----------
   document.querySelectorAll('#tc-actions .tc-btn').forEach(btn => {
     btn.addEventListener('pointerdown', () => {
@@ -220,6 +199,8 @@
   // Show controls only during active gameplay (mirrors keyboard behaviour,
   // which is also gated on gameActive); clear stuck inputs on pause.
   let wasActive = false;
+  let wasJoystickVisible = null;
+  const joystickGroup = document.getElementById('tc-joysticks');
   function syncVisibility() {
     const gameOn = (typeof gameActive !== 'undefined') && !!gameActive;
     const invEl = document.getElementById('inventory');
@@ -232,6 +213,16 @@
       if (!active) clearMovementKeys();
       wasActive = active;
     }
+
+    // Joystick + fire button visibility, independent of the action buttons,
+    // controlled by the "JOYSTICK: ON/OFF" main menu toggle.
+    const joyVisible = window.joystickControlsVisible !== false;
+    if (joyVisible !== wasJoystickVisible) {
+      if (joystickGroup) joystickGroup.classList.toggle('tc-joysticks-hidden', !joyVisible);
+      if (!joyVisible) { keys['a'] = keys['d'] = keys['i'] = keys['k'] = keys['s'] = keys['w'] = false; keys['control'] = false; }
+      wasJoystickVisible = joyVisible;
+    }
+
     requestAnimationFrame(syncVisibility);
   }
   requestAnimationFrame(syncVisibility);

@@ -29,34 +29,265 @@ window.addEventListener('error', (e) => {
   showEngineErrorBanner(e.message || e.error || 'unknown error');
 });
 
-// === SOUND (Web Audio beeps - defined early to avoid ReferenceError) ===
+// ==================== ENHANCED MUSIC GENERATION & 3D MESHES ====================
+// Polyphonic synth system with state-aware chord progressions + enhanced mesh models
+
 let audioCtx;
-function playBeep(f=440, d=0.1, t='sawtooth', v=0.3) {
-  if (!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-  o.type = t; o.frequency.value = f; g.gain.value = v;
-  o.connect(g); g.connect(audioCtx.destination);
-  o.start();
-  setTimeout(() => { g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + d); o.stop(audioCtx.currentTime + d + 0.05); }, 5);
+let masterGain;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.25;
+  masterGain.connect(audioCtx.destination);
 }
 
-// === STATION THEME SONG (extended chill arpeggio from docking elevator music) ===
+class SynthVoice {
+  constructor() {
+    this.osc = null;
+    this.gain = null;
+    this.startTime = 0;
+  }
+  
+  start(freq, duration = 1.0, waveform = 'sine', volume = 0.1) {
+    if (!audioCtx) initAudio();
+    
+    this.osc = audioCtx.createOscillator();
+    this.gain = audioCtx.createGain();
+    this.osc.type = waveform;
+    this.osc.frequency.value = freq;
+    
+    this.osc.connect(this.gain);
+    this.gain.connect(masterGain);
+    
+    this.startTime = audioCtx.currentTime;
+    this.gain.gain.setValueAtTime(volume, this.startTime);
+    this.gain.gain.linearRampToValueAtTime(0, this.startTime + duration);
+    
+    this.osc.start(this.startTime);
+    this.osc.stop(this.startTime + duration + 0.05);
+  }
+  
+  stop() {
+    if (this.osc) {
+      this.osc.stop(audioCtx.currentTime + 0.1);
+      this.osc = null;
+    }
+  }
+}
+
+const chordProgression = {
+  minorChord: (root) => [root, root + 3, root + 7, root + 10],
+  majorChord: (root) => [root, root + 4, root + 7, root + 12],
+  diminished: (root) => [root, root + 3, root + 6],
+  augmented: (root) => [root, root + 4, root + 8],
+};
+
+const pentatonicScale = [60, 63, 65, 67, 70, 72, 75, 77];
+
+class PolyphonicSynthesizerMk2 {
+  constructor() {
+    this.voices = [];
+    this.progressionPhase = 0;
+    this.lastChordTime = Date.now();
+    this.gameStateVolume = 0.12;
+    this.melodyInterval = null;
+    this.bassInterval = null;
+    this.chordInterval = null;
+  }
+  
+  startAmbience() {
+    if (!audioCtx) initAudio();
+    
+    this.bassInterval = setInterval(() => {
+      const bassNotes = [36, 41, 43, 46];
+      const note = bassNotes[this.progressionPhase % 4];
+      this.playNote(note, 0.5, 'sine', 0.18, 'bass');
+      this.progressionPhase++;
+    }, 1000);
+    
+    this.chordInterval = setInterval(() => {
+      const chordRoots = [48, 48, 51, 46];
+      const root = chordRoots[this.progressionPhase % 4];
+      const notes = chordProgression.minorChord(root);
+      
+      notes.forEach((n, i) => {
+        setTimeout(() => this.playNote(n, 2.0, 'triangle', 0.06, 'chord'), i * 150);
+      });
+    }, 4000);
+    
+    this.melodyInterval = setInterval(() => {
+      const freq = pentatonicScale[Math.floor(Math.random() * pentatonicScale.length)];
+      const duration = Math.random() < 0.3 ? 0.8 : 0.4;
+      this.playNote(freq, duration, 'sine', 0.14, 'melody');
+    }, 600);
+  }
+  
+  playNote(freq, duration = 0.5, waveform = 'sine', volume = 0.1, role = 'melody') {
+    if (!audioCtx) initAudio();
+    
+    const voice = new SynthVoice();
+    const adaptiveVol = volume * Math.max(0.8, this.gameStateVolume);
+    voice.start(freq, duration, waveform, adaptiveVol);
+    this.voices.push(voice);
+    
+    setTimeout(() => {
+      this.voices = this.voices.filter(v => v !== voice);
+    }, (duration + 0.1) * 1000);
+  }
+  
+  setGameState(oxygenLevel, waterLevel, foodLevel, fuelLevel) {
+    const minResource = Math.min(oxygenLevel, waterLevel, foodLevel, fuelLevel);
+    this.gameStateVolume = minResource < 20 ? 0.22 : minResource < 50 ? 0.16 : 0.12;
+  }
+  
+  stop() {
+    if (this.melodyInterval) clearInterval(this.melodyInterval);
+    if (this.bassInterval) clearInterval(this.bassInterval);
+    if (this.chordInterval) clearInterval(this.chordInterval);
+    this.voices.forEach(v => v.stop());
+    this.voices = [];
+  }
+}
+
+let synth = new PolyphonicSynthesizerMk2();
+
+function seededRandom(seed) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+// Removed duplicate — now in assets.js
+// Removed duplicates — now loaded from assets.js (complex Quake2 models + pink station + themed farms)
+
+
+// === SOUND SYSTEM (Polyphonic Synth) ===
+// NOTE: this used to say "provided by enhanced-music-meshes.js — do not
+// define playBeep() or beat/synth functions here", but that file was never
+// actually included in this project (see index.html script tags), which
+// left playBeep/startBeatAtmosphere/stopBeatAtmosphere/startSynthAtmosphere/
+// stopSynthAtmosphere undefined everywhere they were called. Defining them
+// here, using the SynthVoice/PolyphonicSynthesizerMk2 machinery already in
+// this file, so every sound effect and music toggle actually works.
+function playBeep(freq, duration = 0.3, waveform = 'sine', volume = 0.15) {
+  if (!audioCtx) initAudio();
+  const voice = new SynthVoice();
+  voice.start(freq, duration, waveform, volume);
+}
+
+function play808Kick() {
+  if (!audioCtx) initAudio();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  const f = audioCtx.createBiquadFilter();
+  o.type = 'sine';
+  o.frequency.value = 120;
+  f.type = 'lowpass';
+  f.frequency.value = 600;
+  const t = audioCtx.currentTime;
+  o.frequency.setValueAtTime(120, t);
+  o.frequency.exponentialRampToValueAtTime(40, t + 0.7);
+  g.gain.value = 0.9;
+  g.gain.linearRampToValueAtTime(0.001, t + 0.8);
+  o.connect(f); f.connect(g); g.connect(masterGain);
+  o.start(t); o.stop(t + 1.5);
+}
+function play808Hat(open = false) {
+  if (!audioCtx) initAudio();
+  const len = Math.floor(audioCtx.sampleRate * (open ? 0.6 : 0.12));
+  const b = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = b;
+  const g = audioCtx.createGain();
+  const f = audioCtx.createBiquadFilter();
+  f.type = 'highpass';
+  f.frequency.value = 5000;
+  g.gain.value = open ? 0.35 : 0.22;
+  g.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + (open ? 0.55 : 0.1));
+  src.connect(f); f.connect(g); g.connect(masterGain);
+  src.start();
+}
+function play808Snare() {
+  if (!audioCtx) initAudio();
+  // noise
+  const len = Math.floor(audioCtx.sampleRate * 0.35);
+  const b = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = b;
+  const g = audioCtx.createGain();
+  const f = audioCtx.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.value = 200;
+  f.Q.value = 1.8;
+  g.gain.value = 0.55;
+  g.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+  src.connect(f); f.connect(g); g.connect(masterGain);
+  src.start();
+  // tone
+  const o = audioCtx.createOscillator();
+  o.type = 'triangle';
+  o.frequency.value = 160;
+  const og = audioCtx.createGain();
+  og.gain.value = 0.35;
+  og.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+  o.connect(og); og.connect(masterGain);
+  o.start(); o.stop(audioCtx.currentTime + 0.25);
+}
+
+let beatAtmosphereInterval = null;
+function startBeatAtmosphere() {
+  if (beatAtmosphereInterval) return;
+  if (!audioCtx) initAudio();
+  let step = 0;
+  beatAtmosphereInterval = setInterval(() => {
+    // algorithmic 808 drumpads pattern
+    if (step % 4 === 0) play808Kick();
+    if (step % 8 === 4) play808Snare();
+    if (Math.random() < 0.75) play808Hat(false);
+    if (step % 16 === 8 && Math.random() < 0.4) play808Hat(true);
+    if ((step % 3 === 1 || step % 7 === 2) && Math.random() < 0.25) play808Kick();
+    step = (step + 1) % 16;
+  }, 125);
+}
+function stopBeatAtmosphere() {
+  if (beatAtmosphereInterval) {
+    clearInterval(beatAtmosphereInterval);
+    beatAtmosphereInterval = null;
+  }
+}
+function startSynthAtmosphere() {
+  synth.startAmbience();
+}
+function stopSynthAtmosphere() {
+  synth.stop();
+}
+
+// Station theme kept for compatibility:
 let stationThemeInterval = null;
 function startStationTheme() {
   if (stationThemeInterval) return;
+  if (!audioCtx) initAudio();
+  
   stationThemeInterval = setInterval(() => {
-    // 30s loopable lo-fi space chill (slow dreamy sine pads + melody)
-    playBeep(130, 1.2, 'sine', 0.14); // low drone C3
-    setTimeout(() => playBeep(165, 1.0, 'sine', 0.12), 800); // E3
-    setTimeout(() => playBeep(196, 1.0, 'sine', 0.12), 1600); // G3
-    setTimeout(() => playBeep(261, 0.9, 'sine', 0.18), 2400); // C4 melody
-    setTimeout(() => playBeep(196, 0.8, 'sine', 0.14), 3200); // G3
-    setTimeout(() => playBeep(165, 0.8, 'sine', 0.12), 4000); // E3
-    setTimeout(() => playBeep(130, 1.5, 'sine', 0.12), 4800); // low return
-  }, 8000); // slow chill loop (effective ~30s feel with repeats)
+    synth.playNote(65, 1.2, 'sine', 0.14);  // F3
+    setTimeout(() => synth.playNote(82, 1.0, 'sine', 0.12), 800); // G#3
+    setTimeout(() => synth.playNote(98, 1.0, 'sine', 0.12), 1600); // G4
+    setTimeout(() => synth.playNote(130, 0.9, 'sine', 0.18), 2400); // C4
+    setTimeout(() => synth.playNote(98, 0.8, 'sine', 0.14), 3200); // G4
+    setTimeout(() => synth.playNote(82, 0.8, 'sine', 0.12), 4000); // G#3
+    setTimeout(() => synth.playNote(65, 1.5, 'sine', 0.12), 4800); // F3
+  }, 8000);
 }
 function stopStationTheme() {
-  if (stationThemeInterval) { clearInterval(stationThemeInterval); stationThemeInterval = null; }
+  if (stationThemeInterval) {
+    clearInterval(stationThemeInterval);
+    stationThemeInterval = null;
+  }
 }
 
 function playDragonSong() {
@@ -109,6 +340,8 @@ document.getElementById('btn-start').addEventListener('click', () => {
   // Fresh initialization on start
   oxygen = 85; water = 70; food = 60; fuel = 55;
   playTimeSeconds = 0;
+  resourceActiveSeconds = 0;
+  resourcePausedSeconds = 0;
   player.position.set(0, 0, 0);
   player.rotation.set(0, 0, 0);
   player.userData.velocity.set(0, 0, 0);
@@ -136,8 +369,11 @@ document.getElementById('btn-start').addEventListener('click', () => {
 
   document.getElementById('main-menu').style.display = 'none';
   document.getElementById('ingame-stats').style.display = 'flex';
+  const crtCanvas = document.getElementById('crt-overlay');
+  if (crtCanvas) crtCanvas.style.display = 'block';
+  if (window.gameCanvas) window.gameCanvas.style.display = 'block';
   document.getElementById('btn-resume').style.display = 'block';
-  stopStationTheme();
+  startStationTheme();
   gameActive = true;
 });
 
@@ -145,7 +381,10 @@ document.getElementById('btn-start').addEventListener('click', () => {
 document.getElementById('btn-resume').addEventListener('click', () => {
   document.getElementById('main-menu').style.display = 'none';
   document.getElementById('ingame-stats').style.display = 'flex';
-  stopStationTheme();
+  const crtCanvas = document.getElementById('crt-overlay');
+  if (crtCanvas) crtCanvas.style.display = 'block';
+  if (window.gameCanvas) window.gameCanvas.style.display = 'block';
+  startStationTheme();
   gameActive = true;
 });
 
@@ -210,6 +449,17 @@ let hostPin = '';
 let playerNick = '';
 let mpPlayers = [];
 
+// === CHARACTER SELECTION ===
+let selectedCharacter = 'misty'; // Default character
+
+const characterData = {
+  misty: { idle: 'misty.jpg', active: 'misty-b.jpg', label: 'MISTY' },
+  tom: { idle: 'tom.jpg', active: 'tom-b.jpg', label: 'TOM' },
+  ratkins: { idle: 'ratkins.jpg', active: 'ratkins-b.jpg', label: 'RATKINS' },
+  '40s': { idle: '40_s.jpg', active: '40_s-b.jpg', label: "40's" },
+  socky: { idle: 'socky.jpg', active: 'socky-b.jpg', label: 'SOCKY' }
+};
+
 document.getElementById('btn-multi').addEventListener('click', () => {
   const p = document.createElement('div');
   p.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,15,40,0.98);border:2px solid #0ff;padding:25px;border-radius:6px;color:#0ff;font-family:monospace;width:300px;box-shadow:0 0 35px rgba(0,255,255,0.35);z-index:320;text-align:center;';
@@ -271,12 +521,41 @@ document.getElementById('btn-multi').addEventListener('click', () => {
   document.getElementById('c').onclick = () => p.remove();
 });
 
-['music','interactions','enemy','gamepad','resource','minimap','assist','direction-assist'].forEach(id => {
+// === CHARACTER SELECTION HANDLERS ===
+document.querySelectorAll('.char-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const char = btn.dataset.char;
+    selectedCharacter = char;
+    
+    // Update button styling - highlight selected, reset others
+    document.querySelectorAll('.char-btn').forEach(b => {
+      if (b.dataset.char === char) {
+        b.style.borderWidth = '2px';
+        b.style.borderColor = '#0ff';
+        b.style.background = 'rgba(0,40,80,0.8)';
+      } else {
+        b.style.borderWidth = '1px';
+        b.style.borderColor = '#0ff';
+        b.style.background = 'rgba(0,20,40,0.8)';
+      }
+    });
+    
+    // Update standby images immediately if game is running
+    updateStandbyImages();
+  });
+});
+
+// Set initial button styling (Misty is default)
+document.querySelector('[data-char="misty"]').style.borderWidth = '2px';
+document.querySelector('[data-char="misty"]').style.background = 'rgba(0,40,80,0.8)';
+
+['music','interactions','enemy','gamepad','resource','minimap','assist','direction-assist','joystick'].forEach(id => {
   const b = document.getElementById('btn-'+id);
   if(b) b.addEventListener('click', () => {
     const isOn = b.textContent.includes(': ON');
     b.textContent = b.textContent.replace(isOn ? ': ON' : ': OFF', isOn ? ': OFF' : ': ON');
     if (id === 'gamepad') gamepadEnabled = !isOn;
+    if (id === 'joystick') window.joystickControlsVisible = !isOn;
     if (id === 'minimap') {
       minimapEnabled = !isOn;
       const frame = document.getElementById('minimap-frame') || minimap;
@@ -287,6 +566,13 @@ document.getElementById('btn-multi').addEventListener('click', () => {
       directionAssistLevel = directionAssistLevel > 0 ? 0 : 2; // toggle Off / Medium
       const label = directionAssistLevel > 0 ? 'ON' : 'OFF';
       b.textContent = b.textContent.replace(/: .*/, `: ${label}`);
+    }
+    if (id === 'music') {
+      if (isOn) {
+        stopSynthAtmosphere(); stopBeatAtmosphere();
+      } else {
+        startSynthAtmosphere(); startBeatAtmosphere();
+      }
     }
   });
 });
@@ -320,7 +606,9 @@ function buildSaveData() {
     stations: stationStorage,
     fluid: headlightFluidSlots.map(s => s.count),
     components: shipComponents,
-    playTime: playTimeSeconds
+    playTime: playTimeSeconds,
+    resourceActiveTime: resourceActiveSeconds,
+    resourcePausedTime: resourcePausedSeconds
   };
 }
 
@@ -381,6 +669,8 @@ function applySaveData(parsed) {
   shipComponents  = parsed.components;
   stationStorage  = parsed.stations || {};
   playTimeSeconds = parsed.playTime || 0;
+  resourceActiveSeconds = parsed.resourceActiveTime || 0;
+  resourcePausedSeconds = parsed.resourcePausedTime || 0;
   refreshGrowPlates();
 }
 
@@ -474,6 +764,7 @@ try {
 renderer.setClearColor(0x000008, 1);
 renderer.setPixelRatio(1);
 const rc = renderer.domElement;
+window.gameCanvas = rc; // Make globally accessible for menu toggling
 rc.style.position = 'absolute';
 rc.style.top = '0'; rc.style.left = '0';
 rc.style.width  = '100%';
@@ -523,9 +814,12 @@ if (rc) {
 // === GLOBAL CONTROL STATE ===
 let gameActive = false;
 let minimapEnabled = false; // minimap is now off by default — enable via menu "Minimap" button
-let flightAssist = true;   // Flight Assist (main menu toggle) — 40s idle → gentle auto-orient toward beacon
+let flightAssist = true;   // Flight Assist (main menu toggle) — 30s idle → gentle auto-orient nose toward homing beacon
+let lastInputTime = Date.now();
 let directionAssistLevel = 0; // 0=Off, 1=Low, 2=Medium, 3=Strong — auto-steers toward stations or enemies
 let playTimeSeconds = 0; // total seconds played, persists via save
+let resourceActiveSeconds = 0; // total time with at least one resource (O2/H2O/Food/Fuel) above zero, persists via save
+let resourcePausedSeconds = 0; // total time with NO resources active (all at zero), persists via save
 let currentDifficulty = 'normal';
 let hasEscort = false;
 let escortMines = [];
@@ -550,259 +844,41 @@ sun.position.set(50, 80, -30);
 scene.add(sun);
 
 // === PLAYER SHIP (Toothpick — Headlight-Fluid) ===
-function createEscapePod() {
-  const group = new THREE.Group();
+// Removed duplicate — now in player.js (X-wing/TIE hybrid)
 
-  // === Dragonfly-style hull: round thorax body, big swept insect wings ===
-  const matGray = new THREE.MeshPhongMaterial({ color: 0x8c8578, shininess: 30, specular: 0x333322 });
-  const matDark = new THREE.MeshPhongMaterial({ color: 0x3a352c, shininess: 20 });
-  const matBlue = new THREE.MeshPhongMaterial({ color: 0x4488ff, emissive: 0x112244, shininess: 90 });
-  const matPylon = new THREE.MeshPhongMaterial({ color: 0x55504a, shininess: 10 });
 
-  function addEdges(mesh, opacity) {
-    const edges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(mesh.geometry),
-      new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: opacity !== undefined ? opacity : 0.6 })
-    );
-    mesh.add(edges);
-  }
+const player = createSilverShip();
 
-  // Central bulbous thorax (round faceted body)
-  const cockpit = new THREE.Mesh(new THREE.IcosahedronGeometry(1.15, 2), matGray);
-  group.add(cockpit);
-
-  // Front viewport window
-  const viewport = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), matBlue);
-  viewport.position.set(0, 0.15, -1.2);
-  group.add(viewport);
-
-  // Rounded nose cap (soft, insect-head shape rather than a sharp cone)
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.6, 10, 10), matGray);
-  nose.scale.set(0.85, 0.75, 1.3);
-  nose.position.set(0, 0, -1.55);
-  group.add(nose);
-
-  // === Big swept, tapering insect-style wings (mirrored left/right) ===
-  function wingShape() {
-    const s = new THREE.Shape();
-    s.moveTo(0.15, 0.2);
-    s.lineTo(1.4, -0.1);
-    s.lineTo(3.5, -1.2);
-    s.lineTo(3.15, -1.85);
-    s.lineTo(1.6, -1.9);
-    s.lineTo(0.15, -1.0);
-    s.closePath();
-    return s;
-  }
-  function makeWing(mirror) {
-    const geo = new THREE.ExtrudeGeometry(wingShape(), { depth: 0.08, bevelEnabled: false });
-    const wing = new THREE.Mesh(geo, matDark);
-    wing.rotation.x = -Math.PI / 2;
-    if (mirror) wing.scale.x = -1;
-    addEdges(wing, 0.65);
-    return wing;
-  }
-
-  const rightWing = makeWing(false);
-  rightWing.position.set(0.9, 0.15, -0.15);
-  rightWing.rotation.z = -0.16; // slight upward dihedral toward the tip
-  group.add(rightWing);
-
-  const leftWingGroup = makeWing(true);
-  leftWingGroup.position.set(-0.9, 0.15, -0.15);
-  leftWingGroup.rotation.z = 0.16;
-  group.add(leftWingGroup);
-
-  // Short struts grounding each wing root to the thorax
-  const rootStrutGeo = new THREE.CylinderGeometry(0.14, 0.18, 0.7, 8);
-  const rightStrut = new THREE.Mesh(rootStrutGeo, matPylon);
-  rightStrut.rotation.z = Math.PI / 2;
-  rightStrut.position.set(0.55, 0.1, -0.15);
-  group.add(rightStrut);
-  const leftStrut = rightStrut.clone();
-  leftStrut.position.x = -0.55;
-  group.add(leftStrut);
-
-  // === Small forward stabilizer flaps (solar-panel-like fins near the nose) ===
-  const finGeo = new THREE.BoxGeometry(1.1, 0.06, 0.7);
-  const finStrutGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.55, 6);
-
-  const topFinStrut = new THREE.Mesh(finStrutGeo, matDark);
-  topFinStrut.rotation.z = 0.9;
-  topFinStrut.position.set(-0.5, 0.55, -0.85);
-  group.add(topFinStrut);
-  const topFin = new THREE.Mesh(finGeo, matPylon);
-  topFin.position.set(-1.05, 0.95, -0.85);
-  topFin.rotation.z = 0.55;
-  topFin.rotation.x = 0.1;
-  addEdges(topFin, 0.55);
-  group.add(topFin);
-
-  const bottomFinStrut = new THREE.Mesh(finStrutGeo, matDark);
-  bottomFinStrut.rotation.z = 0.9;
-  bottomFinStrut.position.set(-0.5, -0.55, -0.55);
-  group.add(bottomFinStrut);
-  const bottomFin = new THREE.Mesh(finGeo, matPylon);
-  bottomFin.position.set(-1.05, -0.95, -0.55);
-  bottomFin.rotation.z = -0.55;
-  bottomFin.rotation.x = -0.1;
-  addEdges(bottomFin, 0.55);
-  group.add(bottomFin);
-
-  // Thrusters
-  const thrusterGeo = new THREE.CylinderGeometry(0.28, 0.38, 0.9, 8);
-  const thrusterMat = new THREE.MeshPhongMaterial({
-    color: 0x222222,
-    emissive: 0x441100,
-    shininess: 10
-  });
-
-  // Small running-light thruster tucked at the front-left of the thorax
-  const leftT = new THREE.Mesh(thrusterGeo, thrusterMat);
-  leftT.rotation.x = Math.PI / 2;
-  leftT.scale.set(0.55, 0.55, 0.55);
-  leftT.position.set(-0.85, 0, -0.4);
-  group.add(leftT);
-
-  // Large glowing main engine housing, slung underneath the rear of the hull
-  const engineHousing = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 0.5, 12), matPylon);
-  engineHousing.rotation.x = Math.PI / 2;
-  engineHousing.position.set(0, -0.75, 1.1);
-  group.add(engineHousing);
-  addEdges(engineHousing, 0.4);
-
-  const engineGlowMat = new THREE.MeshBasicMaterial({ color: 0xfff2cc });
-  const engineGlow = new THREE.Mesh(new THREE.SphereGeometry(0.5, 14, 14), engineGlowMat);
-  engineGlow.position.set(0, -0.75, 1.45);
-  group.add(engineGlow);
-
-  const engineLight = new THREE.PointLight(0xffddaa, 1.4, 12);
-  engineLight.position.copy(engineGlow.position);
-  group.add(engineLight);
-
-  // === Slight glowing thruster particle effect ===
-  function createThrusterGlow() {
-    const count = 8;
-    const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(count * 3);
-    const col = new Float32Array(count * 3);
-    const sz = new Float32Array(count);
-
-    for (let i = 0; i < count; i++) {
-      pos[i * 3 + 0] = (Math.random() - 0.5) * 0.25;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 0.25;
-      pos[i * 3 + 2] = 0.55 + Math.random() * 0.35; // slightly behind nozzle
-      col[i * 3 + 0] = 1.0;
-      col[i * 3 + 1] = 0.55 + Math.random() * 0.35;
-      col[i * 3 + 2] = 0.15;
-      sz[i] = 0.07 + Math.random() * 0.05;
-    }
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    geo.setAttribute('size', new THREE.BufferAttribute(sz, 1));
-
-    const mat = new THREE.PointsMaterial({
-      size: 0.11,
-      transparent: true,
-      opacity: 0.0,
-      vertexColors: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
-    const pts = new THREE.Points(geo, mat);
-    pts.userData.baseOpacity = 0.65;
-    return pts;
-  }
-
-  const leftGlow = createThrusterGlow();
-  leftT.add(leftGlow);
-  leftGlow.position.z = 0.75;
-
-  // Bigger particle bloom around the main rear engine
-  const mainGlow = createThrusterGlow();
-  mainGlow.scale.set(2.2, 2.2, 2.2);
-  mainGlow.position.copy(engineGlow.position);
-  group.add(mainGlow);
-
-  group.userData.thrusterGlow = [leftGlow, mainGlow];
-  group.userData.velocity = new THREE.Vector3();
-  group.userData.flashlightOn = false;
-
-  // Flashlight (will be toggled with F)
-  const flashLight = new THREE.PointLight(0xaaffff, 0, 80);
-  flashLight.position.set(0, 0.35, 2.5);
-  group.add(flashLight);
-  group.userData.flashlight = flashLight;
-
-  // === LASER CANNON (front, clear of cockpit)
-  const barrelGeo = new THREE.CylinderGeometry(0.06, 0.09, 1.4, 8);
-  const barrelMat = new THREE.MeshPhongMaterial({ color: 0x334455, shininess: 60, specular: 0x88aacc });
-  const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-  barrel.rotation.x = Math.PI / 2;
-  barrel.position.set(0, -0.45, 2.7);
-  group.add(barrel);
-
-  const muzzleGeo = new THREE.TorusGeometry(0.10, 0.03, 6, 10);
-  const muzzleMat = new THREE.MeshPhongMaterial({ color: 0xff4400, emissive: 0x441100, shininess: 80 });
-  const muzzle = new THREE.Mesh(muzzleGeo, muzzleMat);
-  muzzle.rotation.x = Math.PI / 2;
-  muzzle.position.set(0, -0.45, 3.4);
-  group.add(muzzle);
-
-  const beamPoints = [
-    new THREE.Vector3(0, -0.35, 3.25),
-    new THREE.Vector3(0, -0.35, 3.25)
-  ];
-  const beamGeo = new THREE.BufferGeometry().setFromPoints(beamPoints);
-  const beamMat = new THREE.LineBasicMaterial({ color: 0xff3300, linewidth: 2, transparent: true, opacity: 0 });
-  const beam = new THREE.Line(beamGeo, beamMat);
-  group.add(beam);
-  group.userData.beam = beam;
-  group.userData.beamGeo = beamGeo;
-
-  const laserLight = new THREE.PointLight(0xff3300, 0, 20);
-  laserLight.position.set(0, -0.35, 3.3);
-  group.add(laserLight);
-  group.userData.laserLight = laserLight;
-
-  // === TOOTHPICK nameplate — cemented to starboard hull ===
-  const tagCanvas = document.createElement('canvas');
-  tagCanvas.width = 256; tagCanvas.height = 48;
-  const tagCtx = tagCanvas.getContext('2d');
-  tagCtx.clearRect(0, 0, 256, 48);
-  tagCtx.fillStyle = 'rgba(0,8,20,0.88)';
-  const tr = 6;
-  tagCtx.beginPath();
-  tagCtx.moveTo(tr, 0); tagCtx.lineTo(256 - tr, 0);
-  tagCtx.arcTo(256, 0, 256, tr, tr); tagCtx.lineTo(256, 48 - tr);
-  tagCtx.arcTo(256, 48, 256 - tr, 48, tr); tagCtx.lineTo(tr, 48);
-  tagCtx.arcTo(0, 48, 0, 48 - tr, tr); tagCtx.lineTo(0, tr);
-  tagCtx.arcTo(0, 0, tr, 0, tr); tagCtx.closePath();
-  tagCtx.fill();
-  tagCtx.strokeStyle = '#00ccff';
-  tagCtx.lineWidth = 1.5;
-  tagCtx.stroke();
-  tagCtx.font = 'bold 22px monospace';
-  tagCtx.fillStyle = '#00eeff';
-  tagCtx.textAlign = 'center';
-  tagCtx.textBaseline = 'middle';
-  tagCtx.shadowColor = '#00ffff';
-  tagCtx.shadowBlur = 10;
-  tagCtx.fillText('TOOTHPICK', 128, 24);
-  const tagTex = new THREE.CanvasTexture(tagCanvas);
-  // PlaneGeometry so it stays fixed to the hull, not a billboard
-  const tagGeo = new THREE.PlaneGeometry(3.2, 0.6);
-  const tagMat = new THREE.MeshBasicMaterial({ map: tagTex, transparent: true, opacity: 0.92, side: THREE.DoubleSide, depthWrite: false });
-  const tagMesh = new THREE.Mesh(tagGeo, tagMat);
-  // Rotate so the plane faces outward along +X (starboard side)
-  tagMesh.rotation.y = Math.PI / 2;
-  tagMesh.position.set(1.02, 0.1, -0.2);
-  group.add(tagMesh);
-
-  return group;
+// === Animate the wing "GIF" screens: redraw a new blocky frame every
+// ~120ms per screen (slightly offset per-wing) for that jerky low-frame
+// looping-GIF feel, rather than a smooth per-frame update. ===
+function drawGifFrame(ctx, frame) {
+  const w = ctx.canvas.width, h = ctx.canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const palette = ['#00eeff', '#ff3300', '#ffcc00', '#00eeff'];
+  ctx.fillStyle = palette[frame % palette.length];
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = '#000814';
+  // simple blocky "radar sweep" bar that steps across each frame
+  const barX = (frame * 6) % w;
+  ctx.fillRect(barX, 0, 4, h);
+  ctx.strokeStyle = '#000814';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, w - 2, h - 2);
 }
-
-const player = createEscapePod();
+function updateGifScreens(deltaMs) {
+  const screens = player.userData.gifScreens;
+  if (!screens) return;
+  screens.forEach((s, i) => {
+    s.timer += deltaMs;
+    if (s.timer >= 120) { // old-GIF-style low frame rate, not 60fps
+      s.timer = 0;
+      s.frame = (s.frame + 1) % 4;
+      drawGifFrame(s.ctx, s.frame + i); // offset so the four wings don't all sync up
+      s.tex.needsUpdate = true;
+    }
+  });
+}
 player.rotation.y = Math.PI;  // Spin 180 degrees horizontally
 scene.add(player);
 player.position.set(0, 0, 0);
@@ -936,12 +1012,12 @@ function createResource(typeIndex) {
     color: data.color,
     emissive: data.color,
     emissiveIntensity: 0.9,
-    shininess: 15
+    shininess: 4
   });
   const mesh = new THREE.Mesh(geo, mat);
   group.add(mesh);
 
-  const glowGeo = new THREE.SphereGeometry(1.5, 16, 16);
+  const glowGeo = new THREE.BoxGeometry(2.2, 2.2, 2.2);
   const glowMat = new THREE.MeshBasicMaterial({
     color: data.color,
     transparent: true,
@@ -961,16 +1037,7 @@ function createResource(typeIndex) {
 // === ASTEROIDS ===
 const asteroids = [];
 function createAsteroid(seededSize) {
-  const size = seededSize !== undefined ? seededSize : (1.8 + Math.random() * 2.2);
-  const geo = new THREE.IcosahedronGeometry(size, 1);
-  const mat = new THREE.MeshPhongMaterial({
-    color: 0x555555,
-    flatShading: true,
-    shininess: 4
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.userData = { hazard: true, size };
-  return mesh;
+  return createEnhancedAsteroid(seededSize);
 }
 
 const landmarks = [];
@@ -1738,76 +1805,20 @@ function transferModule(fromArr, toArr, idx) {
   return true;
 }
 
-function createSatellite() {
-  const group = new THREE.Group();
-
-  const bodyGeo = new THREE.BoxGeometry(2.2, 0.9, 0.9);
-  const bodyMat = new THREE.MeshPhongMaterial({ color: 0xaaaaaa, emissive: 0x333344, shininess: 50, specular: 0x666666 });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  group.add(body);
-
-  const panelGeo = new THREE.BoxGeometry(3.2, 0.08, 1.3);
-  const panelMat = new THREE.MeshPhongMaterial({ color: 0x224477, emissive: 0x112244, shininess: 70 });
-  const panelL = new THREE.Mesh(panelGeo, panelMat);
-  panelL.position.set(-2.9, 0, 0);
-  group.add(panelL);
-  const panelR = panelL.clone();
-  panelR.position.x = 2.9;
-  group.add(panelR);
-
-  const dishGeo = new THREE.ConeGeometry(0.5, 0.45, 12);
-  const dishMat = new THREE.MeshPhongMaterial({ color: 0xcccccc, shininess: 60 });
-  const dish = new THREE.Mesh(dishGeo, dishMat);
-  dish.rotation.x = Math.PI;
-  dish.position.set(0, 0.7, 0.55);
-  group.add(dish);
-
-  const beacon = new THREE.PointLight(0xff3333, 0, 10);
-  beacon.position.set(0, 0.6, -0.5);
-  group.add(beacon);
-
-  const edgeGeo = new THREE.EdgesGeometry(bodyGeo);
-  const edgeMat = new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.5 });
-  group.add(new THREE.LineSegments(edgeGeo, edgeMat));
-
-  group.userData = { landmark: true, kind: 'satellite', blinkPhase: Math.random() * Math.PI * 2, beacon };
-  return group;
+function createSatellite(seed) {
+  return createEnhancedSatellite(seed || Date.now());
 }
 
 function createWreck(seed) {
-  const group = new THREE.Group();
+  return createEnhancedWreck(seed);
+}
 
-  const hullGeo = new THREE.BoxGeometry(3.6, 1.4, 2.0);
-  const hullMat = new THREE.MeshPhongMaterial({ color: 0x553322, flatShading: true, shininess: 6, emissive: 0x110500 });
-  const hull = new THREE.Mesh(hullGeo, hullMat);
-  hull.rotation.z = 0.25;
-  group.add(hull);
+function createSpaceStation() {
+  return createEnhancedSpaceStation();
+}
 
-  const chunkMat = new THREE.MeshPhongMaterial({ color: 0x3f3f3f, flatShading: true, shininess: 4 });
-  for (let i = 0; i < 3; i++) {
-    const cs = 0.5 + seededRandom(seed + i) * 0.6;
-    const chunk = new THREE.Mesh(new THREE.BoxGeometry(cs, cs * 0.6, cs), chunkMat);
-    chunk.position.set(
-      (seededRandom(seed + i + 10) - 0.5) * 4,
-      (seededRandom(seed + i + 20) - 0.5) * 2,
-      (seededRandom(seed + i + 30) - 0.5) * 3
-    );
-    chunk.rotation.set(seededRandom(seed + i + 40) * 6, seededRandom(seed + i + 50) * 6, seededRandom(seed + i + 60) * 6);
-    group.add(chunk);
-  }
-
-  const beacon = new THREE.PointLight(0xff8800, 0, 14);
-  beacon.position.set(0.5, 1.0, 0);
-  group.add(beacon);
-
-  const edgeGeo = new THREE.EdgesGeometry(hullGeo);
-  const edgeMat = new THREE.LineBasicMaterial({ color: 0x995533, transparent: true, opacity: 0.5 });
-  const edges = new THREE.LineSegments(edgeGeo, edgeMat);
-  edges.rotation.copy(hull.rotation);
-  group.add(edges);
-
-  group.userData = { landmark: true, kind: 'wreck', blinkPhase: Math.random() * Math.PI * 2, beacon };
-  return group;
+function createGrowPlate(type) {
+  return createEnhancedGrowFarm(type);
 }
 
 // === GAME STATE ===
@@ -1986,6 +1997,7 @@ window.addEventListener('keydown', e => {
   if (!gameActive) return;
   const key = e.key.toLowerCase();
   keys[key] = true;
+  lastInputTime = Date.now();
 
   if (key === 'w' || key === 'arrowup') {
     const now = Date.now();
@@ -2025,7 +2037,9 @@ window.addEventListener('keydown', e => {
     const flash = player.userData.flashlight;
     if (flash) {
       player.userData.flashlightOn = !player.userData.flashlightOn;
-      flash.intensity = player.userData.flashlightOn ? 2.2 : 0;
+      flash.intensity = player.userData.flashlightOn ? 3.5 : 0;
+      const cone = player.userData.spotBeamCone;
+      if (cone) cone.material.opacity = player.userData.flashlightOn ? 0.14 : 0;
       // Use headlight-fluid canister: fill all resource bars to max
       const fluidSlot = headlightFluidSlots.find(s => s.count > 0);
       if (fluidSlot) {
@@ -2048,16 +2062,21 @@ window.addEventListener('keydown', e => {
 
   if (key === 'm' || key === 'escape') {
     const menu = document.getElementById('main-menu');
+    const crtCanvas = document.getElementById('crt-overlay');
     const isMenuOpen = menu.style.display !== 'none';
     if (isMenuOpen) {
       // Resume game
       menu.style.display = 'none';
       document.getElementById('ingame-stats').style.display = 'flex';
+      if (crtCanvas) crtCanvas.style.display = 'block';
+      if (window.gameCanvas) window.gameCanvas.style.display = 'block';
       gameActive = true;
     } else {
       // Pause and show menu
       gameActive = false;
       document.getElementById('ingame-stats').style.display = 'none';
+      if (crtCanvas) crtCanvas.style.display = 'none';
+      if (window.gameCanvas) window.gameCanvas.style.display = 'none';
       document.getElementById('btn-resume').style.display = 'block';
       updateMenuPlaytime();
       menu.style.display = 'flex';
@@ -2342,25 +2361,104 @@ function updateStandbyImages() {
   const active = document.getElementById('standby-active');
   if (!idle || !active) return;
   
+  // Get selected character's images
+  const charData = characterData[selectedCharacter];
+  if (charData) {
+    idle.src = charData.idle;
+    active.src = charData.active;
+  }
+  
   const menusOpen = inventoryOpen || stationPanelOpen;
   
   // Only show standby images during gameplay (not in menus or main menu)
-  // Show standby-2 (active) when ALL resources are available
-  // Show standby-1 (idle) when ANY resource is empty
+  // Show active image when ALL resources are available
+  // Show idle image when ANY resource is empty
   const showActive = gameActive && window.allResourcesAvailable && !menusOpen;
   const showIdle = gameActive && !window.allResourcesAvailable && !menusOpen;
   
   idle.style.display = showIdle ? 'block' : 'none';
   active.style.display = showActive ? 'block' : 'none';
+
+  // Resource-active / resource-paused readout, shown above the standby images
+  const timerEl = document.getElementById('resource-timer-display');
+  if (timerEl) {
+    const showTimer = gameActive && !menusOpen;
+    if (showTimer) {
+      timerEl.style.display = 'block';
+      timerEl.innerHTML =
+        'ACTIVE&nbsp; ' + formatPlaytime(resourceActiveSeconds) +
+        '<br>PAUSED&nbsp; ' + formatPlaytime(resourcePausedSeconds);
+    } else {
+      timerEl.style.display = 'none';
+    }
+  }
 }
 
 function updateHUD() {
   const menusOpen = inventoryOpen || stationPanelOpen;
+  const mainMenuVisible = document.getElementById('main-menu').style.display !== 'none';
 
-  // Hide main HUD when any menu/inventory is open
+  // Completely hide ingame-stats HUD when any menu/inventory is open OR when main menu is showing
   const ingameStats = document.getElementById('ingame-stats');
   if (ingameStats) {
-    ingameStats.style.display = menusOpen ? 'none' : 'flex';
+    if (menusOpen || mainMenuVisible) {
+      ingameStats.style.display = 'none';
+      ingameStats.style.visibility = 'hidden';
+      ingameStats.style.opacity = '0';
+      ingameStats.style.pointerEvents = 'none';
+      ingameStats.style.height = '0';
+      ingameStats.style.overflow = 'hidden';
+      ingameStats.style.position = 'fixed';
+      ingameStats.style.bottom = '-1000px'; // Move way off-screen
+    } else {
+      ingameStats.style.display = 'flex';
+      ingameStats.style.visibility = 'visible';
+      ingameStats.style.opacity = '1';
+      ingameStats.style.pointerEvents = 'auto';
+      ingameStats.style.height = 'auto';
+      ingameStats.style.overflow = 'visible';
+      ingameStats.style.position = 'absolute';
+      ingameStats.style.bottom = '0';
+    }
+  }
+
+  // Hide game canvas and move it off-screen when main menu is visible
+  if (window.gameCanvas) {
+    if (mainMenuVisible) {
+      window.gameCanvas.style.display = 'none';
+      window.gameCanvas.style.visibility = 'hidden';
+      window.gameCanvas.style.opacity = '0';
+      window.gameCanvas.style.pointerEvents = 'none';
+      window.gameCanvas.style.position = 'fixed';
+      window.gameCanvas.style.top = '-9999px';
+      window.gameCanvas.style.left = '-9999px';
+    } else {
+      window.gameCanvas.style.display = 'block';
+      window.gameCanvas.style.visibility = 'visible';
+      window.gameCanvas.style.opacity = '1';
+      window.gameCanvas.style.pointerEvents = 'none';
+      window.gameCanvas.style.position = 'absolute';
+      window.gameCanvas.style.top = '0';
+      window.gameCanvas.style.left = '0';
+    }
+  }
+  const crtCanvas = document.getElementById('crt-overlay');
+  if (crtCanvas) {
+    if (mainMenuVisible) {
+      crtCanvas.style.display = 'none';
+      crtCanvas.style.visibility = 'hidden';
+      crtCanvas.style.opacity = '0';
+      crtCanvas.style.position = 'fixed';
+      crtCanvas.style.top = '-9999px';
+      crtCanvas.style.left = '-9999px';
+    } else {
+      crtCanvas.style.display = 'block';
+      crtCanvas.style.visibility = 'visible';
+      crtCanvas.style.opacity = '1';
+      crtCanvas.style.position = 'fixed';
+      crtCanvas.style.top = '0';
+      crtCanvas.style.left = '0';
+    }
   }
 
   if (menusOpen) return;
@@ -2870,7 +2968,9 @@ function renderInventory() {
       oxygen = Math.min(100, oxygen + 10);
       player.userData.flashlightOn = true;
       const fl = player.userData.flashlight;
-      if (fl) fl.intensity = 2.2;
+      if (fl) fl.intensity = 3.5;
+      const cone = player.userData.spotBeamCone;
+      if (cone) cone.material.opacity = 0.14;
       showLootToast('💡 HEADLIGHT FLUID: FLASHLIGHT REFUELLED');
       renderInventory();
     }
@@ -2967,12 +3067,20 @@ function animate() {
 
 function animateFrame() {
   const delta = Math.min(clock.getDelta(), 0.1);
+  updateGifScreens(delta * 1000); // wing screens redraw on their own slow "GIF" cadence
 
   if (gameActive) {
     // Timer only counts when ALL resources have any amount (not empty)
     const allResourcesAvailable = oxygen > 0 && water > 0 && food > 0 && fuel > 0;
     if (allResourcesAvailable) playTimeSeconds += delta;
-    
+
+    // Resource-active / resource-paused timers: "active" counts while at least
+    // one of O2/H2O/Food/Fuel is above zero; "paused" counts while all four are
+    // depleted (zero/empty) at once.
+    const anyResourceActive = oxygen > 0 || water > 0 || food > 0 || fuel > 0;
+    if (anyResourceActive) resourceActiveSeconds += delta;
+    else resourcePausedSeconds += delta;
+
     // Store for HUD/standby display
     window.allResourcesAvailable = allResourcesAvailable;
     
@@ -2985,6 +3093,25 @@ function animateFrame() {
 
     if (keys['i']) player.rotation.x += pitchSpeed;   
     if (keys['k']) player.rotation.x -= pitchSpeed;   
+
+    // Auto-orient after 30s idle (flightAssist on): gentle nose toward homing beacon
+    if (gameActive && flightAssist && (Date.now() - lastInputTime > 30000)) {
+      const toBeacon = regionBeacon.position.clone().sub(player.position);
+      if (toBeacon.lengthSq() > 1) {
+        toBeacon.normalize();
+        const currentFwd = new THREE.Vector3(0, 0, 1).applyQuaternion(player.quaternion);
+        const angle = currentFwd.angleTo(toBeacon);
+        if (angle > 0.02) {
+          const axis = currentFwd.clone().cross(toBeacon).normalize();
+          if (axis.lengthSq() > 0.001) {
+            const turnAngle = Math.min(0.015, angle * 0.6);
+            const turnQuat = new THREE.Quaternion().setFromAxisAngle(axis, turnAngle);
+            player.quaternion.premultiply(turnQuat);
+            player.quaternion.normalize();
+          }
+        }
+      }
+    }
 
     const thrustPower = 0.175; 
     if (keys['w'] || keys['arrowup']) {
@@ -3148,6 +3275,9 @@ function animateFrame() {
     water  = Math.max(0, water  - 0.008 * delta * 60 * (growPlateInstalled.h2o  ? 1 - lootItemTypes[GROW_PLATE_IDX.h2o].drainReduction  : 1));
     food   = Math.max(0, food   - 0.006 * delta * 60 * (growPlateInstalled.food ? 1 - lootItemTypes[GROW_PLATE_IDX.food].drainReduction : 1));
     if (keys['w'] || keys['arrowup']) fuel = Math.max(0, fuel - 0.03 * (growPlateInstalled.fuel ? 1 - lootItemTypes[GROW_PLATE_IDX.fuel].drainReduction : 1));
+
+    // Update synth volume based on resources
+    synth.setGameState(oxygen, water, food, fuel);
 
     // HF Synthesizer: manufacture headlight fluid at half normal loot rate
     if (hfSynth.enabled) {
@@ -3384,6 +3514,21 @@ function animateFrame() {
     updateLaser(delta);
     updateLandmarks(delta);
     updateSpaceCows(delta);
+
+    // Update canvas overlay animations for enhanced meshes
+    landmarks.forEach(landmark => {
+      if (landmark.userData.animate) {
+        landmark.userData.animate(Date.now() / 1000);
+      }
+    });
+
+    // Update station/farm overlay animations
+    pinkStations.forEach(station => {
+      if (station.mesh && station.mesh.userData.animate) {
+        station.mesh.userData.animate(Date.now() / 1000);
+      }
+    });
+
     updateMines(delta);
     updateFarms(delta);
     updateStations(delta);
@@ -4057,9 +4202,9 @@ function drawCRT(delta) {
 
   crtRollY = (crtRollY + delta * 26) % crtH;
   const roll = crtCtx.createLinearGradient(0, crtRollY - 35, 0, crtRollY + 35);
-  roll.addColorStop(0,   'rgba(160,255,200,0)');
-  roll.addColorStop(0.5, 'rgba(160,255,200,0.045)');
-  roll.addColorStop(1,   'rgba(160,255,200,0)');
+  roll.addColorStop(0,   'rgba(255,215,0,0)');
+  roll.addColorStop(0.5, 'rgba(255,215,0,0.08)');
+  roll.addColorStop(1,   'rgba(255,215,0,0)');
   crtCtx.fillStyle = roll;
   crtCtx.fillRect(0, crtRollY - 35, crtW, 70);
 
@@ -4251,7 +4396,13 @@ if (cliInput) {
 }
 
 updateHUD();
-generateNewRegionContent(); 
+generateNewRegionContent();
+
+// Hide CRT overlay and game canvas on startup since the menu is shown initially
+const initialCrtCanvas = document.getElementById('crt-overlay');
+if (initialCrtCanvas) initialCrtCanvas.style.display = 'none';
+if (window.gameCanvas) window.gameCanvas.style.display = 'none';
+
 animate();
 
 // === MENU BACKGROUND DISABLED ===

@@ -1,31 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Headlight-Fluid</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="theme-color" content="#000000">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon-192.png">
-  <link rel="apple-touch-icon" href="icon-192.png">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<!-- MENU STARFIELD + POD CANVAS -->
-<canvas id="menu-bg" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:299;pointer-events:none;display:none;"></canvas>
-
-<!-- STANDBY STATUS IMAGES (lower left), with resource-active/paused timer readout above them -->
-<div id="standby-wrap" style="position: fixed; bottom: 10px; left: 10px; z-index: 50; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; pointer-events: none;">
-  <div id="resource-timer-display" style="display:none; font-family: monospace; font-size: 9px; line-height:1.5; color: #0ff; background: rgba(0,10,30,0.6); border: 1px solid rgba(0,255,255,0.35); border-radius: 3px; padding: 3px 6px; text-shadow: 0 0 4px #0ff; white-space: nowrap;"></div>
-  <img id="standby-idle" class="standby-img" src="standby-1.jpg" style="width: 120px; height: auto; display: none;">
-  <img id="standby-active" class="standby-img" src="standby-2.jpg" style="width: 120px; height: auto; display: none;">
-</div>
-
-<!-- MAIN MENU OVERLAY -->
-<div id="main-menu" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: url('bg.jpg.jpg') center/cover no-repeat, rgba(0,4,16,0.75); background-blend-mode: overlay; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 300; font-family: monospace; color: #0ff; overflow-y: auto; box-sizing: border-box; padding: 40px 0 20px;">
+<div id="main-menu" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: url('bg.jpg.jpg') center/cover no-repeat, rgba(0,4,16,1); background-blend-mode: overlay; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: monospace; color: #0ff; overflow-y: auto; box-sizing: border-box; padding: 40px 0 20px; overflow-x: hidden;">
   <h1 style="font-size: 28px; letter-spacing: 5px; margin-bottom: 4px; text-shadow: 0 0 10px #0ff; text-align: center;">HEADLIGHT-FLUID</h1>
   <div style="font-size: 14px; letter-spacing: 4px; color: #0aa; margin-bottom: 10px; text-align: center;">HEADLIGHT-FLUID</div>
   <div style="margin-bottom:8px; font-size:10px; color:#0aa;">PILOT (6 chars)</div>
@@ -63,7 +36,7 @@
 </div>
 
 <!-- ABOUT PANEL -->
-<div id="about-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,15,40,0.98); border: 2px solid #0ff; padding: 25px; border-radius: 6px; color: #0ff; font-family: monospace; max-width: 560px; width: 92%; box-shadow: 0 0 35px rgba(0,255,255,0.35); z-index: 320;">
+<div id="about-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,15,40,0.98); border: 2px solid #0ff; padding: 25px; border-radius: 6px; color: #0ff; font-family: monospace; max-width: 560px; width: 92%; box-shadow: 0 0 35px rgba(0,255,255,0.35); z-index: 10000;">
   <h3 style="margin-top: 0; border-bottom: 1px solid #0ff; padding-bottom: 8px; letter-spacing: 1px;">FLIGHT INTERACTION SYSTEM</h3>
   <div style="font-size: 13px; line-height: 1.6; max-height: 460px; overflow-y: auto;">
     <p><strong style="color:#fff;">Flight Thrust:</strong> W / S or ↑ / ↓ keys</p>
@@ -121,7 +94,7 @@
 </div>
 
 <!-- KEYBIND PANEL -->
-<div id="keys-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,15,40,0.98); border: 2px solid #0ff; padding: 25px; border-radius: 6px; color: #0ff; font-family: monospace; width: 340px; max-width: 95vw; box-shadow: 0 0 35px rgba(0,255,255,0.35); z-index: 320;">
+<div id="keys-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,15,40,0.98); border: 2px solid #0ff; padding: 25px; border-radius: 6px; color: #0ff; font-family: monospace; width: 340px; max-width: 95vw; box-shadow: 0 0 35px rgba(0,255,255,0.35); z-index: 10000;">
   <h3 style="margin-top: 0; border-bottom: 1px solid #0ff; padding-bottom: 8px; letter-spacing: 1px;">KEY BINDINGS</h3>
   <div id="keys-content" style="font-size: 13px; max-height: 420px; overflow-y: auto;"></div>
   <div style="margin-top:12px; font-size:10px; color:#0aa; opacity:0.7;">Click a binding then press any key to remap.</div>
@@ -129,7 +102,7 @@
 </div>
 
 <!-- SAVE/LOAD PANEL -->
-<div id="saveload-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,15,40,0.98); border: 2px solid #0ff; padding: 25px; border-radius: 6px; color: #0ff; font-family: monospace; width: 300px; box-shadow: 0 0 35px rgba(0,255,255,0.35); z-index: 320; text-align: center;">
+<div id="saveload-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,15,40,0.98); border: 2px solid #0ff; padding: 25px; border-radius: 6px; color: #0ff; font-family: monospace; width: 300px; box-shadow: 0 0 35px rgba(0,255,255,0.35); z-index: 10000; text-align: center;">
   <h3 style="margin-top: 0; border-bottom: 1px solid #0ff; padding-bottom: 8px; letter-spacing: 1px;">SAVE-GAME-LOAD</h3>
   <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
     <button id="btn-save-action" style="background: rgba(0,40,20,0.6); border: 1px solid #0f8; color: #0f8; font-family: monospace; padding: 12px; cursor: pointer; font-weight: bold;">SAVE STATE</button>
@@ -152,7 +125,7 @@
 <div id="station-prompt" style="display:none; position:absolute; bottom:60px; left:50%; transform:translateX(-50%); background:rgba(40,0,30,0.88); border:1px solid #ff3fa4; color:#ff8ad1; padding:8px 16px; border-radius:4px; font-family:monospace; font-size:13px; letter-spacing:1px; z-index:80; text-shadow:0 0 6px #ff3fa4; white-space:nowrap;">🌸 PINK STATION IN RANGE — PRESS <strong>O</strong> TO DOCK</div>
 
 <!-- INVENTORY -->
-<div id="inventory" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,15,40,0.95); border: 2px solid #0ff; padding: 20px; border-radius: 8px; color: #0ff; font-family: monospace; text-align: center; box-shadow: 0 0 30px rgba(0,255,255,0.3); z-index: 100; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
+<div id="inventory" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,15,40,0.95); border: 2px solid #0ff; padding: 20px; border-radius: 8px; color: #0ff; font-family: monospace; text-align: center; box-shadow: 0 0 30px rgba(0,255,255,0.3); z-index: 10000; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
   <h2 style="margin: 0 0 15px 0; color: #0ff;">INVENTORY</h2>
   <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
     <!-- Column 1: main resources + cargo hold -->
@@ -185,7 +158,7 @@
 </div>
 
 <!-- STATION STORAGE PANEL (Pink Stations) -->
-<div id="station-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(30,0,20,0.96); border: 2px solid #ff3fa4; padding: 20px; border-radius: 8px; color: #ff8ad1; font-family: monospace; text-align: center; box-shadow: 0 0 30px rgba(255,63,164,0.4); z-index: 100; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
+<div id="station-panel" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(30,0,20,0.96); border: 2px solid #ff3fa4; padding: 20px; border-radius: 8px; color: #ff8ad1; font-family: monospace; text-align: center; box-shadow: 0 0 30px rgba(255,63,164,0.4); z-index: 10000; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
   <h2 style="margin: 0 0 4px 0; color: #ff3fa4;">🌸 PINK STATION — STORAGE</h2>
 
   <!-- Station Resource Reservoir — passively farmed, tops up player vitals in range -->
@@ -334,13 +307,3 @@
     AppPlugin.addListener('backButton', () => {
       const cli = document.getElementById('cli-overlay');
       const inv = document.getElementById('inventory');
-      const menu = document.getElementById('main-menu');
-      if (cli && cli.style.display !== 'none') { cli.style.display = 'none'; return; }
-      if (inv && inv.style.display !== 'none') { window.dispatchEvent(new KeyboardEvent('keydown', {key:'p'})); return; }
-      if (menu && menu.style.display === 'none') { window.dispatchEvent(new KeyboardEvent('keydown', {key:'m'})); return; }
-      AppPlugin.exitApp();
-    });
-  })();
-</script>
-</body>
-</html>
